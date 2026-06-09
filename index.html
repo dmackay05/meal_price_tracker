@@ -477,7 +477,7 @@ code { background: var(--card2); padding: 2px 6px; border-radius: 5px; font-size
 ═════════════════════════════════════════════════════════════════════════════ -->
 
 <!-- Add/Edit Item -->
-<div class="modal-bg" id="bg-item" onclick="closeBg('bg-item','modal-item')">
+<div class="modal-bg" id="bg-item">
   <div class="modal" id="modal-item">
     <div class="modal-handle"></div>
     <div class="modal-title" id="modal-item-title">Add Item</div>
@@ -508,7 +508,7 @@ code { background: var(--card2); padding: 2px 6px; border-radius: 5px; font-size
 </div>
 
 <!-- Add Store -->
-<div class="modal-bg" id="bg-store" onclick="closeBg('bg-store','modal-store')">
+<div class="modal-bg" id="bg-store">
   <div class="modal" id="modal-store">
     <div class="modal-handle"></div>
     <div class="modal-title">Add Store</div>
@@ -529,7 +529,7 @@ code { background: var(--card2); padding: 2px 6px; border-radius: 5px; font-size
 </div>
 
 <!-- Log Price -->
-<div class="modal-bg" id="bg-price" onclick="closeBg('bg-price','modal-price')">
+<div class="modal-bg" id="bg-price">
   <div class="modal" id="modal-price">
     <div class="modal-handle"></div>
     <div class="modal-title">Log Price</div>
@@ -548,7 +548,7 @@ code { background: var(--card2); padding: 2px 6px; border-radius: 5px; font-size
 </div>
 
 <!-- Settings -->
-<div class="modal-bg" id="bg-settings" onclick="closeBg('bg-settings','modal-settings')">
+<div class="modal-bg" id="bg-settings">
   <div class="modal" id="modal-settings">
     <div class="modal-handle"></div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
@@ -714,14 +714,32 @@ function showTab(tab) {
 
 // ── Modal helpers ─────────────────────────────────────────────────────────────
 function openModal(bgId, modalId) {
-  document.getElementById(bgId).classList.add('open');
-  requestAnimationFrame(() => document.getElementById(modalId).classList.add('open'));
+  const bg = document.getElementById(bgId);
+  const modal = document.getElementById(modalId);
+  bg.classList.add('open');
+  // Track when modal opened so keyboard resize doesn't trigger close
+  modal._openedAt = Date.now();
+  requestAnimationFrame(() => modal.classList.add('open'));
 }
 function closeModal(bgId, modalId) {
   document.getElementById(modalId).classList.remove('open');
   setTimeout(() => document.getElementById(bgId).classList.remove('open'), 300);
 }
 function closeBg(bgId, modalId) { closeModal(bgId, modalId); }
+
+// Close modal only when tapping the dark backdrop (not when keyboard resizes viewport)
+document.querySelectorAll('.modal-bg').forEach(bg => {
+  bg.addEventListener('pointerdown', function(e) {
+    // Only close if the tap target is the backdrop itself, not the modal sheet
+    if (e.target !== bg) return;
+    // Ignore if modal just opened (within 400ms) — prevents keyboard-triggered close
+    const modal = bg.querySelector('.modal');
+    if (modal && modal._openedAt && (Date.now() - modal._openedAt) < 400) return;
+    // Find matching modal id from bg id (bg-store -> modal-store)
+    const modalId = bg.id.replace('bg-', 'modal-');
+    closeModal(bg.id, modalId);
+  });
+});
 
 // ── Meal plan render ──────────────────────────────────────────────────────────
 function setMealView(v) {
