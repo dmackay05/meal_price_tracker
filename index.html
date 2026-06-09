@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Family Meal & Shopping Tracker</title>
+<style>
+  :root {
+    --bg:       #0f1117;
+    --card:     #1a1d27;
+    --card2:    #222536;
+    --border:   #2a2d3e;
+    --text:     #e8eaf0;
+    --muted:    #8b8fa8;
+    --blue:     #4f8ef7;
+    --green:    #3ecf8e;
+    --amber:    #f5a623;
+    --red:      #f56565;
+    --purple:   #a78bfa;
+    --teal:     #5eead4;
+    --font:     'Inter', system-ui, sans-serif;
+    --mono:     'JetBrains Mono', 'Fira Mono', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; min-height: 100vh; }
+
+  /* ── Top nav ── */
+  .topbar { background: var(--card); border-bottom: 1px solid var(--border); padding: 0 20px; display: flex; align-items: center; gap: 0; position: sticky; top: 0; z-index: 100; }
+  .topbar-brand { font-size: 15px; font-weight: 700; color: var(--green); padding: 16px 20px 16px 0; border-right: 1px solid var(--border); margin-right: 4px; white-space: nowrap; }
+  .tab-btn { padding: 16px 18px; font-size: 13px; font-weight: 500; color: var(--muted); background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; transition: all .15s; white-space: nowrap; }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { color: var(--green); border-bottom-color: var(--green); }
+  .topbar-right { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+  .sync-btn { background: var(--green); color: #0f1117; border: none; border-radius: 6px; padding: 6px 14px; font-size: 12px; font-weight: 700; cursor: pointer; }
+  .sync-btn:hover { opacity: .85; }
+  .sync-status { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+  .gear-btn { background: none; border: 1px solid var(--border); border-radius: 6px; color: var(--muted); font-size: 16px; width: 32px; height: 32px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; }
+  .gear-btn:hover { color: var(--text); border-color: var(--green); transform: rotate(30deg); }
+  .settings-section { border-top: 1px solid var(--border); margin-top: 14px; padding-top: 14px; }
+  .settings-section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 10px; }
+  .url-input-wrap { display: flex; gap: 8px; }
+  .url-input-wrap input { flex: 1; font-family: var(--mono); font-size: 12px; }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+  .status-dot.connected { background: var(--green); }
+  .status-dot.disconnected { background: var(--red); }
+  .status-dot.unknown { background: var(--amber); }
+
+  /* ── Panels ── */
+  .panel { display: none; padding: 20px; max-width: 1200px; margin: 0 auto; }
+  .panel.active { display: block; }
+
+  /* ── Cards ── */
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 14px; }
+  .card-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 12px; }
+
+  /* ── Grid layouts ── */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  @media(max-width: 700px) { .grid2,.grid3,.grid4 { grid-template-columns: 1fr; } }
+
+  /* ── Stat tiles ── */
+  .stat { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+  .stat-val { font-size: 28px; font-weight: 800; font-family: var(--mono); line-height: 1; margin-bottom: 4px; }
+  .stat-lbl { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+
+  /* ── Tables ── */
+  .tbl-wrap { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { background: var(--card2); color: var(--muted); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  td { padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,.02); }
+
+  /* ── Tags ── */
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; font-family: var(--mono); }
+  .tag-green  { background: rgba(62,207,142,.15); color: var(--green); }
+  .tag-amber  { background: rgba(245,166,35,.15);  color: var(--amber); }
+  .tag-red    { background: rgba(245,101,101,.15); color: var(--red); }
+  .tag-blue   { background: rgba(79,142,247,.15);  color: var(--blue); }
+  .tag-purple { background: rgba(167,139,250,.15); color: var(--purple); }
+  .tag-muted  { background: rgba(139,143,168,.1);  color: var(--muted); }
+
+  /* ── Buttons ── */
+  .btn { border: none; border-radius: 6px; padding: 7px 14px; font-size: 12px; font-weight: 600; cursor: pointer; transition: opacity .15s; }
+  .btn-primary { background: var(--green); color: #0f1117; }
+  .btn-ghost   { background: var(--card2); color: var(--text); border: 1px solid var(--border); }
+  .btn-danger  { background: rgba(245,101,101,.15); color: var(--red); border: 1px solid rgba(245,101,101,.3); }
+  .btn:hover   { opacity: .82; }
+  .btn-sm { padding: 4px 10px; font-size: 11px; }
+
+  /* ── Inputs ── */
+  input, select, textarea { background: var(--card2); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 13px; padding: 7px 10px; outline: none; font-family: var(--font); }
+  input:focus, select:focus { border-color: var(--green); }
+  input[type=number] { font-family: var(--mono); }
+  select option { background: var(--card2); }
+
+  /* ── Toggle pill ── */
+  .toggle-pill { display: flex; background: var(--card2); border: 1px solid var(--border); border-radius: 8px; padding: 3px; gap: 2px; width: fit-content; margin-bottom: 16px; }
+  .toggle-pill button { border: none; border-radius: 6px; padding: 6px 16px; font-size: 12px; font-weight: 600; cursor: pointer; background: transparent; color: var(--muted); transition: all .15s; }
+  .toggle-pill button.active { background: var(--green); color: #0f1117; }
+
+  /* ── Section headers ── */
+  .section-hdr { font-size: 13px; font-weight: 700; color: var(--text); margin: 20px 0 10px; display: flex; align-items: center; gap: 8px; }
+  .section-hdr::after { content:''; flex:1; height:1px; background: var(--border); }
+
+  /* ── Meal plan ── */
+  .meal-day { background: var(--card); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 10px; overflow: hidden; }
+  .meal-day-hdr { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--card2); border-bottom: 1px solid var(--border); }
+  .meal-day-name { font-weight: 700; font-size: 13px; min-width: 90px; }
+  .meal-day-title { font-size: 14px; font-weight: 600; color: var(--text); }
+  .meal-day-body { padding: 12px 16px; font-size: 13px; color: var(--muted); line-height: 1.6; }
+  .meal-day-meta { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+
+  /* ── Shopping list ── */
+  .cat-section { margin-bottom: 6px; }
+  .cat-hdr { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--card2); border-radius: 8px 8px 0 0; border: 1px solid var(--border); cursor: pointer; user-select: none; }
+  .cat-hdr-label { font-weight: 700; font-size: 13px; flex: 1; }
+  .cat-body { border: 1px solid var(--border); border-top: none; border-radius: 0 0 8px 8px; overflow: hidden; }
+  .cat-body.collapsed { display: none; }
+
+  /* ── Price comparison ── */
+  .store-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; background: var(--card2); border: 1px solid var(--border); }
+  .best-price td { background: rgba(62,207,142,.04) !important; }
+
+  /* ── Progress bar ── */
+  .pbar-wrap { background: var(--card2); border-radius: 4px; height: 6px; overflow: hidden; margin-top: 6px; }
+  .pbar { height: 100%; border-radius: 4px; transition: width .4s; }
+
+  /* ── Modal ── */
+  .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 200; align-items: center; justify-content: center; }
+  .modal-bg.open { display: flex; }
+  .modal { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; width: 90%; max-width: 480px; max-height: 90vh; overflow-y: auto; }
+  .modal-title { font-size: 15px; font-weight: 700; margin-bottom: 16px; }
+  .form-row { margin-bottom: 12px; }
+  .form-row label { display: block; font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 5px; }
+  .form-row input, .form-row select { width: 100%; }
+  .form-actions { display: flex; gap: 8px; margin-top: 16px; justify-content: flex-end; }
+
+  /* ── Chart placeholder ── */
+  .chart-area { width: 100%; height: 160px; position: relative; }
+  canvas { width: 100% !important; }
+
+  /* ── Low stock alert ── */
+  .alert-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: rgba(245,166,35,.08); border: 1px solid rgba(245,166,35,.2); border-radius: 8px; margin-bottom: 6px; font-size: 13px; }
+  .alert-icon { font-size: 16px; }
+
+  /* ── WoW principles ── */
+  .wow-pill { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: var(--card2); border: 1px solid var(--border); border-radius: 20px; font-size: 12px; margin: 3px; }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  .empty { color: var(--muted); font-size: 13px; padding: 20px; text-align: center; }
+  .cost-val { font-family: var(--mono); font-size: 13px; }
+  .inline-input { width: 70px; padding: 4px 6px; font-size: 12px; }
+  .inline-input-lg { width: 100px; }
+  .store-col select { min-width: 110px; font-size: 12px; padding: 4px 6px; }
+</style>
+</head>
+<body>
+
+<!-- ── Top Nav ─────────────────────────────────────────────────────────────── -->
+<div class="topbar">
+  <div class="topbar-brand">🥗 Family Planner</div>
+  <button class="tab-btn active" onclick="showTab('dashboard')">Dashboard</button>
+  <button class="tab-btn" onclick="showTab('mealplan')">Meal Plan</button>
+  <button class="tab-btn" onclick="showTab('shopping')">Shopping</button>
+  <button class="tab-btn" onclick="showTab('stores')">Stores</button>
+  <div class="topbar-right">
+    <span class="sync-status" id="sync-status">not synced</span>
+    <button class="sync-btn" onclick="syncAll()">↑↓ Sync</button>
+    <button class="gear-btn" onclick="openSettings()" title="Settings">⚙</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════════
+     DASHBOARD
+═════════════════════════════════════════════════════════════════════════════ -->
+<div class="panel active" id="panel-dashboard">
+
+  <div class="grid4" style="margin-bottom:14px">
+    <div class="stat">
+      <div class="stat-val" id="d-total-cost" style="color:var(--green)">$0.00</div>
+      <div class="stat-lbl">Est. Weekly Total</div>
+      <div class="pbar-wrap"><div class="pbar" id="d-budget-bar" style="background:var(--green);width:0%"></div></div>
+      <div style="font-size:10px;color:var(--muted);margin-top:4px;font-family:var(--mono)" id="d-budget-lbl">Budget: $—</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val" id="d-low-count" style="color:var(--amber)">0</div>
+      <div class="stat-lbl">Items Running Low</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val" id="d-items-needed" style="color:var(--blue)">0</div>
+      <div class="stat-lbl">Items to Buy This Week</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val" id="d-stores-count" style="color:var(--purple)">0</div>
+      <div class="stat-lbl">Stores Tracked</div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <!-- Low stock -->
+    <div class="card">
+      <div class="card-title">⚠ Running Low</div>
+      <div id="d-low-list"><div class="empty">All stocked up</div></div>
+    </div>
+
+    <!-- Cost by store -->
+    <div class="card">
+      <div class="card-title">🏪 Estimated Cost by Store</div>
+      <div id="d-store-costs"><div class="empty">No price data yet — add prices in Shopping tab</div></div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <!-- Best price summary -->
+    <div class="card">
+      <div class="card-title">💰 Best Price Per Item</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Item</th><th>Best Price</th><th>Store</th><th>Savings vs Avg</th></tr></thead>
+          <tbody id="d-best-prices"><tr><td colspan="4" class="empty">No price data yet</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Stock levels -->
+    <div class="card">
+      <div class="card-title">📦 Stock Levels</div>
+      <div id="d-stock-levels"><div class="empty">Add items in Shopping tab</div></div>
+    </div>
+  </div>
+
+  <!-- Budget setting -->
+  <div class="card">
+    <div class="card-title">⚙ Weekly Budget</div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <span style="color:var(--muted);font-size:13px">Weekly grocery budget: $</span>
+      <input type="number" id="budget-input" style="width:100px" placeholder="200" oninput="saveBudget()">
+      <span style="color:var(--muted);font-size:12px">Estimated $180–220 for a family of 5 on this plan</span>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════════
+     MEAL PLAN
+═════════════════════════════════════════════════════════════════════════════ -->
+<div class="panel" id="panel-mealplan">
+
+  <div class="toggle-pill">
+    <button class="active" id="mp-david-btn" onclick="setMealView('david')">👤 David</button>
+    <button id="mp-family-btn" onclick="setMealView('family')">👨‍👩‍👧‍👧 Family</button>
+  </div>
+
+  <!-- WoW principles -->
+  <div class="card">
+    <div class="card-title">📖 Word of Wisdom Principles</div>
+    <div>
+      <span class="wow-pill">🌾 Grains as foundation</span>
+      <span class="wow-pill">🍎 Fruits & veg in season</span>
+      <span class="wow-pill">🍗 Meat used sparingly</span>
+      <span class="wow-pill">🐟 Fish 1–2× weekly</span>
+      <span class="wow-pill">🫒 Wholesome plants & fats</span>
+      <span class="wow-pill">🚫 No alcohol</span>
+    </div>
+  </div>
+
+  <!-- David targets (david view only) -->
+  <div id="mp-targets" class="grid4" style="margin-bottom:14px">
+    <div class="stat"><div class="stat-val" style="color:var(--green);font-size:22px">2,200–2,300</div><div class="stat-lbl">Total cal/day</div></div>
+    <div class="stat"><div class="stat-val" style="color:var(--teal);font-size:22px">1,900</div><div class="stat-lbl">Net cal goal</div></div>
+    <div class="stat"><div class="stat-val" style="color:var(--purple);font-size:22px">170g</div><div class="stat-lbl">Protein/day</div></div>
+    <div class="stat"><div class="stat-val" style="color:var(--blue);font-size:22px">120–150</div><div class="stat-lbl">Hydration (oz)</div></div>
+  </div>
+
+  <!-- Breakfast -->
+  <div class="section-hdr">🍳 Breakfast — Pick One</div>
+  <div class="tbl-wrap card" style="padding:0;margin-bottom:14px">
+    <table>
+      <thead><tr><th>Option</th><th>What It Is</th><th id="bfast-prot-hdr">Protein</th><th>Works For</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Eggs + Toast</strong></td><td>2–3 scrambled eggs in olive oil, whole grain toast, fruit</td><td class="cost-val">~22g</td><td><span class="tag tag-green">Everyone</span></td></tr>
+        <tr><td><strong>Yogurt Bowl</strong></td><td>Greek yogurt + berries + granola or oats</td><td class="cost-val">~20g</td><td><span class="tag tag-green">Everyone</span></td></tr>
+        <tr><td><strong>Oatmeal + Eggs</strong></td><td>Rolled oats with fruit + 2 boiled eggs on the side</td><td class="cost-val">~24g</td><td><span class="tag tag-green">Everyone</span></td></tr>
+        <tr><td><strong>Smoothie</strong></td><td>Whey + Greek yogurt + frozen fruit + milk (Nutribullet)</td><td class="cost-val">~35g</td><td><span class="tag tag-blue">David best</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Lunch -->
+  <div class="section-hdr">🥗 Lunch — Meal Prep Mon–Fri</div>
+  <div id="mp-lunch-note" class="card" style="font-size:13px;color:var(--muted);margin-bottom:10px">
+    Batch cook 3–4 lbs chicken + big pot of brown rice or quinoa every Sunday. Portion into containers — done.
+  </div>
+  <div class="tbl-wrap card" style="padding:0;margin-bottom:14px">
+    <table>
+      <thead><tr><th>Option</th><th>Components</th><th id="lunch-prot-hdr">Protein</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Chicken + Grain Bowl</strong></td><td>Chicken breast, brown rice or quinoa, roasted veg, olive oil</td><td class="cost-val">~45g</td><td>Primary weekday lunch</td></tr>
+        <tr><td><strong>Leftover Dinner</strong></td><td>Previous night's dinner reheated</td><td class="cost-val">~40g</td><td>Zero extra work</td></tr>
+        <tr><td><strong>Wrap</strong></td><td>Chicken, avocado, cheese in whole wheat tortilla</td><td class="cost-val">~40g</td><td>3 minutes</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 7-day dinners -->
+  <div class="section-hdr">🍽 7-Day Dinner Plan</div>
+  <div id="mp-dinners"></div>
+
+  <!-- Sunday prep -->
+  <div class="section-hdr">📋 Sunday Meal Prep</div>
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title" id="prep-david-title">For David</div>
+      <ul style="padding-left:16px;font-size:13px;line-height:2;color:var(--muted)">
+        <li>Boil 6–8 eggs → snacks & breakfasts all week</li>
+        <li>Cook 3–4 lbs chicken → lunch containers Mon–Fri</li>
+        <li>Cook large pot of brown rice or quinoa</li>
+        <li>Portion Greek yogurt into grab-and-go containers</li>
+        <li id="prep-weigh-li">Log starting weight for the week</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title">For the Family</div>
+      <ul style="padding-left:16px;font-size:13px;line-height:2;color:var(--muted)">
+        <li>Chop onions, bell peppers, garlic → store in containers</li>
+        <li>Start slow cooker if using Wed soup or Sat chili</li>
+        <li>Post dinner list on the fridge</li>
+        <li>Wash and dry salad greens</li>
+        <li>Pre-portion nut snacks into bags</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════════
+     SHOPPING LIST
+═════════════════════════════════════════════════════════════════════════════ -->
+<div class="panel" id="panel-shopping">
+
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+    <button class="btn btn-primary" onclick="openAddItem()">+ Add Item</button>
+    <button class="btn btn-ghost" onclick="openAddStore()">+ Add Store</button>
+    <button class="btn btn-ghost" onclick="checkAll()">✓ Check All Needed</button>
+    <button class="btn btn-ghost" onclick="clearChecked()">Clear Checked</button>
+    <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+      <span style="font-size:12px;color:var(--muted)">Filter store:</span>
+      <select id="store-filter" onchange="renderShopping()" style="font-size:12px;padding:5px 8px">
+        <option value="">All stores</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Summary bar -->
+  <div class="card" style="display:flex;gap:20px;align-items:center;flex-wrap:wrap;margin-bottom:6px">
+    <div><span style="font-size:12px;color:var(--muted)">Items needed: </span><span id="sh-needed" class="cost-val" style="color:var(--blue)">0</span></div>
+    <div><span style="font-size:12px;color:var(--muted)">Est. total: </span><span id="sh-total" class="cost-val" style="color:var(--green)">$0.00</span></div>
+    <div><span style="font-size:12px;color:var(--muted)">Checked off: </span><span id="sh-checked" class="cost-val" style="color:var(--teal)">0</span></div>
+  </div>
+
+  <div id="shopping-list"></div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════════
+     STORES / PRICE HISTORY
+═════════════════════════════════════════════════════════════════════════════ -->
+<div class="panel" id="panel-stores">
+
+  <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+    <button class="btn btn-primary" onclick="openAddStore()">+ Add Store</button>
+    <button class="btn btn-ghost" onclick="openLogPrice()">📝 Log Store Visit</button>
+  </div>
+
+  <!-- Store list -->
+  <div class="section-hdr">Stores</div>
+  <div class="grid3" id="stores-grid">
+    <div class="empty">No stores added yet</div>
+  </div>
+
+  <!-- Price history table -->
+  <div class="section-hdr" style="margin-top:20px">Price History</div>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Item</th><th>Store</th><th>Price</th><th>Date</th><th>Notes</th><th></th></tr></thead>
+      <tbody id="price-history-body"><tr><td colspan="6" class="empty">No price logs yet</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════════
+     MODALS
+═════════════════════════════════════════════════════════════════════════════ -->
+
+<!-- Add/Edit Item -->
+<div class="modal-bg" id="modal-item">
+  <div class="modal">
+    <div class="modal-title" id="modal-item-title">Add Item</div>
+    <div class="form-row"><label>Item Name</label><input id="fi-name" placeholder="e.g. Chicken breasts"></div>
+    <div class="form-row"><label>Category</label>
+      <select id="fi-cat">
+        <option>🥩 Proteins</option><option>🐟 Seafood</option><option>🥛 Dairy & Eggs</option>
+        <option>🌾 Grains</option><option>🥦 Vegetables</option><option>🍎 Fruits</option>
+        <option>🫘 Beans & Legumes</option><option>🫒 Fats & Nuts</option>
+        <option>🥫 Pantry</option><option>🧂 Seasonings</option><option>💊 Supplements</option>
+      </select>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="form-row"><label>On Hand</label><input type="number" id="fi-onhand" placeholder="0" step="0.1"></div>
+      <div class="form-row"><label>Weekly Need</label><input type="number" id="fi-need" placeholder="1" step="0.1"></div>
+    </div>
+    <div class="form-row"><label>Unit (e.g. lbs, cans, oz)</label><input id="fi-unit" placeholder="lbs"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="form-row"><label>Best Price ($)</label><input type="number" id="fi-price" placeholder="0.00" step="0.01"></div>
+      <div class="form-row"><label>Best Price Store</label>
+        <select id="fi-store"><option value="">— select —</option></select>
+      </div>
+    </div>
+    <div class="form-row"><label>Notes</label><input id="fi-notes" placeholder="optional"></div>
+    <div class="form-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-item')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveItem()">Save Item</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Store -->
+<div class="modal-bg" id="modal-store">
+  <div class="modal">
+    <div class="modal-title">Add Store</div>
+    <div class="form-row"><label>Store Name</label><input id="fs-name" placeholder="e.g. Smith's, Costco, Walmart"></div>
+    <div class="form-row"><label>Color (for display)</label>
+      <select id="fs-color">
+        <option value="var(--blue)">Blue</option><option value="var(--green)">Green</option>
+        <option value="var(--amber)">Amber</option><option value="var(--purple)">Purple</option>
+        <option value="var(--teal)">Teal</option><option value="var(--red)">Red</option>
+      </select>
+    </div>
+    <div class="form-row"><label>Notes</label><input id="fs-notes" placeholder="e.g. bulk proteins, best produce"></div>
+    <div class="form-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-store')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveStore()">Add Store</button>
+    </div>
+  </div>
+</div>
+
+<!-- Log Price Visit -->
+<div class="modal-bg" id="modal-price">
+  <div class="modal">
+    <div class="modal-title">Log Price at Store</div>
+    <div class="form-row"><label>Store</label>
+      <select id="fp-store"><option value="">— select —</option></select>
+    </div>
+    <div class="form-row"><label>Item</label>
+      <select id="fp-item"><option value="">— select —</option></select>
+    </div>
+    <div class="form-row"><label>Price ($)</label><input type="number" id="fp-price" placeholder="0.00" step="0.01"></div>
+    <div class="form-row"><label>Date</label><input type="date" id="fp-date"></div>
+    <div class="form-row"><label>Notes</label><input id="fp-notes" placeholder="e.g. on sale, store brand"></div>
+    <div class="form-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-price')">Cancel</button>
+      <button class="btn btn-primary" onclick="savePrice()">Log Price</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings Modal -->
+<div class="modal-bg" id="modal-settings">
+  <div class="modal" style="max-width:520px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <div class="modal-title" style="margin-bottom:0">⚙ Settings</div>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-settings')">✕</button>
+    </div>
+
+    <!-- Connection status -->
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;padding:10px 12px;background:var(--card2);border-radius:8px;border:1px solid var(--border)">
+      <span class="status-dot unknown" id="settings-status-dot"></span>
+      <span style="font-size:13px" id="settings-status-text">Not connected to Google Sheets</span>
+    </div>
+
+    <!-- Google Apps Script URL -->
+    <div class="settings-section" style="border-top:none;margin-top:0;padding-top:0">
+      <div class="settings-section-title">Google Apps Script URL</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:8px;line-height:1.6">
+        Deploy your Apps Script as a Web App, then paste the URL here. 
+        <a href="https://script.google.com" target="_blank" style="color:var(--blue)">Open script.google.com →</a>
+      </div>
+      <div class="url-input-wrap">
+        <input type="url" id="settings-script-url" placeholder="https://script.google.com/macros/s/…/exec">
+        <button class="btn btn-ghost btn-sm" onclick="testConnection()">Test</button>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px" id="settings-url-hint"></div>
+    </div>
+
+    <!-- Setup steps -->
+    <div class="settings-section">
+      <div class="settings-section-title">Setup Steps</div>
+      <div style="font-size:12px;color:var(--muted);line-height:2">
+        <div><span style="color:var(--green);font-weight:700">1.</span> Download <code style="background:var(--card2);padding:1px 5px;border-radius:3px">apps-script.js</code> from the files above</div>
+        <div><span style="color:var(--green);font-weight:700">2.</span> Go to <a href="https://script.google.com" target="_blank" style="color:var(--blue)">script.google.com</a> → New Project → paste the code</div>
+        <div><span style="color:var(--green);font-weight:700">3.</span> Run <code style="background:var(--card2);padding:1px 5px;border-radius:3px">initSheets()</code> once — it creates your Google Sheet automatically</div>
+        <div><span style="color:var(--green);font-weight:700">4.</span> Deploy → New Deployment → Web App<br>
+          <span style="margin-left:14px;color:var(--muted)">Execute as: <strong style="color:var(--text)">Me</strong> &nbsp;·&nbsp; Who has access: <strong style="color:var(--text)">Anyone</strong></span>
+        </div>
+        <div><span style="color:var(--green);font-weight:700">5.</span> Copy the deployment URL → paste above → Save</div>
+      </div>
+    </div>
+
+    <!-- Budget -->
+    <div class="settings-section">
+      <div class="settings-section-title">Weekly Budget</div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:13px;color:var(--muted)">$</span>
+        <input type="number" id="settings-budget" placeholder="200" style="width:100px">
+        <span style="font-size:12px;color:var(--muted)">Recommended: $180–220 for a family of 5</span>
+      </div>
+    </div>
+
+    <!-- Data management -->
+    <div class="settings-section">
+      <div class="settings-section-title">Data</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm" onclick="exportData()">⬇ Export JSON</button>
+        <button class="btn btn-ghost btn-sm" onclick="resetItems()">↺ Reset Items to Defaults</button>
+        <button class="btn btn-danger btn-sm" onclick="clearAllData()">🗑 Clear All Data</button>
+      </div>
+    </div>
+
+    <div class="form-actions" style="margin-top:16px">
+      <button class="btn btn-ghost" onclick="closeModal('modal-settings')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════════════════════
+// CONFIG — paste your Apps Script URL here after deploying
+// ════════════════════════════════════════════════════════════════════════════
+let SCRIPT_URL = localStorage.getItem("fmp_script_url") || "";
+
+// ── State ────────────────────────────────────────────────────────────────────
+let state = {
+  stores: [],      // [{id, name, color, notes}]
+  items: [],       // [{id, name, cat, onHand, need, unit, bestPrice, bestStore, notes, checked}]
+  prices: [],      // [{id, itemId, storeId, price, date, notes}]
+  budget: 200,
+  mealView: 'david'
+};
+
+const DINNER_DATA = [
+  { day:"Monday",    emoji:"🌮", name:"Turkey Taco Bowls",
+    desc:"Brown rice, seasoned ground turkey, black beans, salsa, avocado, shredded cheese",
+    davidProt:"~44g", prep:"30 min", wow:"Grains + plant protein",
+    pickyNote:"Plain turkey + rice + cheese",
+    davidTip:"Cook a double batch of turkey — use for Tuesday lunch" },
+  { day:"Tuesday",   emoji:"🐟", name:"Baked Tilapia or Tuna Rice Bowls",
+    desc:"Tilapia baked with lemon, garlic, olive oil (or seared tuna), brown rice, steamed broccoli or green beans",
+    davidProt:"~44g", prep:"30 min", wow:"Fish 1–2×/week for omega-3s",
+    pickyNote:"Very mild — worth a try. Chicken alongside if not",
+    davidTip:"Take fish oil with this meal" },
+  { day:"Wednesday", emoji:"🍲", name:"Lentil & Chicken Soup",
+    desc:"Chicken thighs, red lentils, diced tomatoes, carrots, onion, garlic, cumin — whole grain bread on the side",
+    davidProt:"~40g", prep:"45 min", wow:"Meat sparingly — legume-forward",
+    pickyNote:"Pull out plain chicken before lentils go in. Serve with bread.",
+    davidTip:"Slow cooker option: set it in the morning" },
+  { day:"Thursday",  emoji:"🍗", name:"Sheet Pan Chicken & Veggies",
+    desc:"Chicken thighs, bell peppers, zucchini, cherry tomatoes, olives — roasted in olive oil with Italian herbs",
+    davidProt:"~42g", prep:"35 min", wow:"Wholesome plants + lean poultry",
+    pickyNote:"She picks the plain chicken off the pan — no issue",
+    davidTip:"Easiest cook night — one pan, one oven" },
+  { day:"Friday",    emoji:"🥢", name:"Chicken Stir-Fry + Brown Rice",
+    desc:"Chicken breast strips, snap peas, bell pepper, broccoli, soy sauce/tamari, over brown rice",
+    davidProt:"~45g", prep:"25 min", wow:"Grains + lean meat + vegetables",
+    pickyNote:"Serve her plain rice + plain chicken before sauce goes in",
+    davidTip:"Fastest cook night of the week" },
+  { day:"Saturday",  emoji:"🌶", name:"Homemade Turkey Chili",
+    desc:"Ground turkey, black beans, kidney beans, diced tomatoes, peppers — Greek yogurt dollop instead of sour cream",
+    davidProt:"~42g", prep:"40 min", wow:"Celebration meal — still wholesome",
+    pickyNote:"Plain ground turkey + rice on the side for her",
+    davidTip:"Start slow cooker before your Saturday ride" },
+  { day:"Sunday",    emoji:"🥩", name:"Pork Tenderloin + Sweet Potatoes",
+    desc:"Roasted pork tenderloin, sweet potatoes, steamed broccoli or green beans, olive oil",
+    davidProt:"~40g", prep:"45 min", wow:"Sabbath meal — simple, wholesome",
+    pickyNote:"Plain pork + sweet potato — she'll eat both",
+    davidTip:"Also meal-prep day — cook chicken and grains while this roasts" },
+];
+
+const DEFAULT_ITEMS = [
+  {cat:"🥩 Proteins",       name:"Chicken breasts (boneless, skinless)", need:4,   unit:"lbs",  notes:"Meal prep + weeknight dinners"},
+  {cat:"🥩 Proteins",       name:"Chicken thighs",                       need:2.5, unit:"lbs",  notes:"Sheet pan Thursday + Wednesday soup"},
+  {cat:"🥩 Proteins",       name:"Ground turkey (93% lean)",             need:2.5, unit:"lbs",  notes:"Monday tacos + Saturday chili"},
+  {cat:"🥩 Proteins",       name:"Pork tenderloin",                      need:1.5, unit:"lbs",  notes:"Sunday dinner"},
+  {cat:"🐟 Seafood",        name:"Tilapia fillets (fresh or frozen)",    need:1.5, unit:"lbs",  notes:"Tuesday dinner — mild white fish"},
+  {cat:"🐟 Seafood",        name:"Canned tuna in water",                 need:5,   unit:"cans", notes:"Lunch wraps, quick protein"},
+  {cat:"🥛 Dairy & Eggs",   name:"Eggs (large)",                         need:3,   unit:"dozen",notes:"Breakfast + batch boil Sunday"},
+  {cat:"🥛 Dairy & Eggs",   name:"Greek yogurt (plain, nonfat)",         need:2,   unit:"tubs", notes:"Breakfast, snacks, replaces sour cream"},
+  {cat:"🥛 Dairy & Eggs",   name:"Cottage cheese (low-fat)",             need:1.5, unit:"lbs",  notes:"David evening snack"},
+  {cat:"🥛 Dairy & Eggs",   name:"Milk (whole or 2%)",                   need:1,   unit:"gal",  notes:"Smoothies, cooking"},
+  {cat:"🥛 Dairy & Eggs",   name:"Shredded cheese",                      need:1,   unit:"bag",  notes:"Monday tacos topping"},
+  {cat:"🌾 Grains",         name:"Brown rice",                           need:1,   unit:"bag",  notes:"Tacos, stir-fry, picky eater staple"},
+  {cat:"🌾 Grains",         name:"Quinoa",                               need:1,   unit:"bag",  notes:"Tuesday fish night"},
+  {cat:"🌾 Grains",         name:"Whole grain bread",                    need:2,   unit:"loaf", notes:"Breakfast toast, soup side"},
+  {cat:"🌾 Grains",         name:"Whole wheat tortillas",                need:1,   unit:"pack", notes:"Wraps, taco bowls"},
+  {cat:"🌾 Grains",         name:"Rolled oats",                          need:1,   unit:"can",  notes:"Breakfast backup"},
+  {cat:"🥦 Vegetables",     name:"Broccoli (fresh or frozen)",           need:2,   unit:"bags", notes:"Tuesday + Sunday"},
+  {cat:"🥦 Vegetables",     name:"Bell peppers (mixed)",                 need:6,   unit:"ea",   notes:"Thursday + Friday"},
+  {cat:"🥦 Vegetables",     name:"Snap peas",                            need:1,   unit:"bag",  notes:"Friday stir-fry"},
+  {cat:"🥦 Vegetables",     name:"Zucchini",                             need:3,   unit:"ea",   notes:"Thursday sheet pan"},
+  {cat:"🥦 Vegetables",     name:"Cherry tomatoes",                      need:1,   unit:"pint", notes:"Thursday sheet pan"},
+  {cat:"🥦 Vegetables",     name:"Carrots",                              need:1,   unit:"bag",  notes:"Wednesday soup"},
+  {cat:"🥦 Vegetables",     name:"Spinach (fresh or frozen)",            need:1,   unit:"bag",  notes:"Wraps, soups"},
+  {cat:"🥦 Vegetables",     name:"Sweet potatoes",                       need:4,   unit:"ea",   notes:"Sunday roast"},
+  {cat:"🥦 Vegetables",     name:"Onions (yellow)",                      need:1,   unit:"bag",  notes:"Cooking base every night"},
+  {cat:"🥦 Vegetables",     name:"Garlic",                               need:2,   unit:"heads",notes:"Fresh is worth it"},
+  {cat:"🥦 Vegetables",     name:"Avocados",                             need:5,   unit:"ea",   notes:"Tacos, wraps, healthy fat"},
+  {cat:"🍎 Fruits",         name:"Bananas",                              need:1,   unit:"bunch",notes:"Breakfast, smoothies"},
+  {cat:"🍎 Fruits",         name:"Apples",                               need:1,   unit:"bag",  notes:"Snacks — almond butter pairing"},
+  {cat:"🍎 Fruits",         name:"Berries (frozen)",                     need:2,   unit:"bags", notes:"Yogurt bowls, smoothies"},
+  {cat:"🫘 Beans & Legumes",name:"Black beans (canned)",                 need:4,   unit:"cans", notes:"Tacos + chili"},
+  {cat:"🫘 Beans & Legumes",name:"Kidney beans (canned)",                need:2,   unit:"cans", notes:"Saturday chili"},
+  {cat:"🫘 Beans & Legumes",name:"Red lentils (dried)",                  need:1,   unit:"bag",  notes:"Wednesday soup"},
+  {cat:"🫘 Beans & Legumes",name:"Chickpeas (canned)",                   need:2,   unit:"cans", notes:"Salads, stew filler"},
+  {cat:"🫒 Fats & Nuts",    name:"Extra virgin olive oil",               need:1,   unit:"btl",  notes:"Primary cooking oil"},
+  {cat:"🫒 Fats & Nuts",    name:"Walnuts",                              need:1,   unit:"bag",  notes:"Snack + omega-3s"},
+  {cat:"🫒 Fats & Nuts",    name:"Almonds",                              need:1,   unit:"bag",  notes:"Snack"},
+  {cat:"🫒 Fats & Nuts",    name:"Almond butter (natural)",              need:1,   unit:"jar",  notes:"Kids snack"},
+  {cat:"🥫 Pantry",         name:"Diced tomatoes (canned)",              need:4,   unit:"cans", notes:"Soup + chili + skillets"},
+  {cat:"🥫 Pantry",         name:"Chicken broth (low sodium)",           need:2,   unit:"carton",notes:"Soups, cooking grains"},
+  {cat:"🥫 Pantry",         name:"Salsa",                                need:1,   unit:"jar",  notes:"Monday tacos"},
+  {cat:"🥫 Pantry",         name:"Soy sauce / tamari (low sodium)",      need:1,   unit:"btl",  notes:"Friday stir-fry"},
+  {cat:"💊 Supplements",    name:"Fish oil (Sports Research Omega-3)",    need:1,   unit:"btl",  notes:"2 softgels daily — monthly buy"},
+  {cat:"💊 Supplements",    name:"Simvastatin 20mg",                      need:1,   unit:"rx",   notes:"As prescribed — monthly"},
+];
+
+// ── Persistence ──────────────────────────────────────────────────────────────
+function save() { localStorage.setItem('fmp_state', JSON.stringify(state)); }
+function load() {
+  const s = localStorage.getItem('fmp_state');
+  if (s) { try { state = {...state, ...JSON.parse(s)}; } catch(e){} }
+  if (!state.items.length) seedDefaults();
+  if (!state.budget) state.budget = 200;
+}
+function seedDefaults() {
+  state.items = DEFAULT_ITEMS.map((d,i) => ({
+    id: 'item_'+i, name:d.name, cat:d.cat, onHand:0, need:d.need,
+    unit:d.unit, bestPrice:0, bestStore:'', notes:d.notes, checked:false
+  }));
+}
+
+// ── Tab navigation ───────────────────────────────────────────────────────────
+function showTab(tab) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-'+tab).classList.add('active');
+  event.currentTarget.classList.add('active');
+  if (tab==='dashboard') renderDashboard();
+  if (tab==='mealplan') renderMealPlan();
+  if (tab==='shopping') renderShopping();
+  if (tab==='stores') renderStores();
+}
+
+// ── Meal plan ────────────────────────────────────────────────────────────────
+function setMealView(v) {
+  state.mealView = v;
+  document.getElementById('mp-david-btn').classList.toggle('active', v==='david');
+  document.getElementById('mp-family-btn').classList.toggle('active', v==='family');
+  document.getElementById('mp-targets').style.display = v==='david' ? 'grid' : 'none';
+  document.getElementById('bfast-prot-hdr').textContent = v==='david' ? 'Protein' : '';
+  document.getElementById('lunch-prot-hdr').textContent = v==='david' ? 'Protein' : '';
+  document.getElementById('prep-david-title').textContent = v==='david' ? 'For David' : 'Dad Does';
+  document.getElementById('prep-weigh-li').style.display = v==='david' ? '' : 'none';
+  renderMealPlan();
+  save();
+}
+function renderMealPlan() {
+  const d = state.mealView === 'david';
+  const el = document.getElementById('mp-dinners');
+  el.innerHTML = DINNER_DATA.map(din => `
+    <div class="meal-day">
+      <div class="meal-day-hdr">
+        <span style="font-size:20px">${din.emoji}</span>
+        <span class="meal-day-name">${din.day}</span>
+        <span class="meal-day-title">${din.name}</span>
+        <span class="tag tag-muted" style="margin-left:auto">${din.prep}</span>
+      </div>
+      <div class="meal-day-body">
+        <div>${din.desc}</div>
+        <div class="meal-day-meta">
+          ${d ? `<span class="tag tag-purple">Protein: ${din.davidProt}</span>` : ''}
+          <span class="tag tag-green">WoW: ${din.wow}</span>
+          <span class="tag tag-amber">👧 ${din.pickyNote}</span>
+          ${d ? `<span class="tag tag-blue">💡 ${din.davidTip}</span>` : ''}
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+// ── Shopping list ────────────────────────────────────────────────────────────
+function renderShopping() {
+  const filter = document.getElementById('store-filter').value;
+  const cats = [...new Set(state.items.map(i=>i.cat))];
+  let needed = 0, total = 0, checked = 0;
+  const html = cats.map(cat => {
+    const items = state.items.filter(i=>i.cat===cat && (!filter || i.bestStore===filter));
+    if (!items.length) return '';
+    const rows = items.map(item => {
+      const toBuy = Math.max(0, item.need - item.onHand);
+      const cost = toBuy * (item.bestPrice||0);
+      if (toBuy > 0) needed++;
+      total += cost;
+      if (item.checked) checked++;
+      const storeOpts = state.stores.map(s =>
+        `<option value="${s.id}" ${item.bestStore===s.id?'selected':''}>${s.name}</option>`).join('');
+      const bestName = state.stores.find(s=>s.id===item.bestStore)?.name || '—';
+      const pHist = state.prices.filter(p=>p.itemId===item.id);
+      const hasPrices = pHist.length > 0;
+      const minP = hasPrices ? Math.min(...pHist.map(p=>p.price)) : null;
+      const bestStoreName = hasPrices ? state.stores.find(s=>s.id===pHist.find(p=>p.price===minP)?.storeId)?.name||'?' : null;
+      return `<tr class="${item.checked?'opacity-50':''}">
+        <td><input type="checkbox" ${item.checked?'checked':''} onchange="toggleCheck('${item.id}',this.checked)" style="margin-right:6px">
+          <strong>${item.name}</strong>
+          ${item.notes?`<div style="font-size:11px;color:var(--muted)">${item.notes}</div>`:''}
+        </td>
+        <td>
+          <input class="inline-input" type="number" value="${item.onHand}" step="0.1"
+            onchange="updateField('${item.id}','onHand',+this.value)"
+            title="On hand"> <span style="font-size:11px;color:var(--muted)">${item.unit}</span>
+        </td>
+        <td>
+          <input class="inline-input" type="number" value="${item.need}" step="0.1"
+            onchange="updateField('${item.id}','need',+this.value)">
+          <span style="font-size:11px;color:var(--muted)">${item.unit}</span>
+        </td>
+        <td><span class="cost-val ${toBuy>0?'':'tag tag-green'}" style="${toBuy>0?'color:var(--amber)':''}">${toBuy > 0 ? toBuy+' '+item.unit : '✓ stocked'}</span></td>
+        <td>
+          <input class="inline-input" type="number" value="${item.bestPrice||''}" step="0.01" placeholder="$0.00"
+            onchange="updateField('${item.id}','bestPrice',+this.value)" style="width:80px">
+        </td>
+        <td class="store-col">
+          <select onchange="updateField('${item.id}','bestStore',this.value)">
+            <option value="">—</option>${storeOpts}
+          </select>
+        </td>
+        <td><span class="cost-val" style="color:var(--green)">${cost>0?'$'+cost.toFixed(2):'—'}</span></td>
+        <td>
+          ${hasPrices?`<span class="tag tag-blue" title="Best: $${minP?.toFixed(2)} @ ${bestStoreName}">$${minP?.toFixed(2)} @ ${bestStoreName}</span>`:'<span style="color:var(--muted);font-size:11px">no history</span>'}
+          <button class="btn btn-ghost btn-sm" onclick="quickLogPrice('${item.id}')" title="Log price" style="margin-left:4px">+$</button>
+        </td>
+        <td><button class="btn btn-danger btn-sm" onclick="deleteItem('${item.id}')">✕</button></td>
+      </tr>`;
+    }).join('');
+    const catTotal = items.reduce((s,i)=>{
+      const tb=Math.max(0,i.need-i.onHand); return s+(tb*(i.bestPrice||0));},0);
+    return `<div class="cat-section">
+      <div class="cat-hdr" onclick="toggleCat(this)">
+        <span class="cat-hdr-label">${cat}</span>
+        <span class="tag tag-muted">${items.length} items</span>
+        <span class="cost-val" style="color:var(--green);font-size:12px">${catTotal>0?'$'+catTotal.toFixed(2):''}</span>
+        <span style="color:var(--muted);font-size:14px;margin-left:6px">▼</span>
+      </div>
+      <div class="cat-body">
+        <div class="tbl-wrap" style="border:none;border-radius:0">
+          <table>
+            <thead><tr>
+              <th>Item</th><th>On Hand</th><th>Need/Week</th>
+              <th>To Buy</th><th>Unit Price</th><th>Store</th>
+              <th>Est. Cost</th><th>Best Price</th><th></th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('shopping-list').innerHTML = html || '<div class="empty">No items yet</div>';
+  document.getElementById('sh-needed').textContent = needed;
+  document.getElementById('sh-total').textContent = '$'+total.toFixed(2);
+  document.getElementById('sh-checked').textContent = checked;
+}
+function toggleCat(hdr) {
+  const body = hdr.nextElementSibling;
+  const arr = hdr.querySelector('span:last-child');
+  body.classList.toggle('collapsed');
+  arr.textContent = body.classList.contains('collapsed') ? '▶' : '▼';
+}
+function toggleCheck(id, val) {
+  const item = state.items.find(i=>i.id===id);
+  if (item) { item.checked=val; save(); renderShopping(); }
+}
+function updateField(id, field, val) {
+  const item = state.items.find(i=>i.id===id);
+  if (item) { item[field]=val; save(); renderDashboardStats(); }
+}
+function deleteItem(id) {
+  if (!confirm('Remove this item?')) return;
+  state.items = state.items.filter(i=>i.id!==id);
+  save(); renderShopping();
+}
+function checkAll() {
+  state.items.forEach(i=>{ if(Math.max(0,i.need-i.onHand)>0) i.checked=true; });
+  save(); renderShopping();
+}
+function clearChecked() {
+  state.items.forEach(i=>i.checked=false);
+  save(); renderShopping();
+}
+
+// ── Stores ───────────────────────────────────────────────────────────────────
+function renderStores() {
+  const el = document.getElementById('stores-grid');
+  if (!state.stores.length) { el.innerHTML = '<div class="empty">No stores added yet</div>'; }
+  else {
+    el.innerHTML = state.stores.map(s => {
+      const storePrices = state.prices.filter(p=>p.storeId===s.id);
+      const storeItems = [...new Set(storePrices.map(p=>p.itemId))].length;
+      const estTotal = state.items.reduce((sum,item)=>{
+        if (item.bestStore===s.id) { const tb=Math.max(0,item.need-item.onHand); return sum+tb*(item.bestPrice||0); }
+        return sum;
+      },0);
+      return `<div class="card">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <div style="width:10px;height:10px;border-radius:50%;background:${s.color}"></div>
+          <strong style="font-size:14px">${s.name}</strong>
+          <button class="btn btn-danger btn-sm" style="margin-left:auto" onclick="deleteStore('${s.id}')">✕</button>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:6px">${s.notes||'No notes'}</div>
+        <div style="display:flex;gap:12px;font-size:12px">
+          <span><strong>${storeItems}</strong> items tracked</span>
+          <span style="color:var(--green)"><strong>$${estTotal.toFixed(2)}</strong> est. this week</span>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // Price history
+  const tbody = document.getElementById('price-history-body');
+  if (!state.prices.length) {
+    tbody.innerHTML = '<tr><td colspan="6" class="empty">No price logs yet</td></tr>';
+  } else {
+    const sorted = [...state.prices].sort((a,b)=>b.date.localeCompare(a.date));
+    tbody.innerHTML = sorted.map(p => {
+      const item = state.items.find(i=>i.id===p.itemId);
+      const store = state.stores.find(s=>s.id===p.storeId);
+      return `<tr>
+        <td>${item?.name||'—'}</td>
+        <td><span class="store-badge"><span style="width:8px;height:8px;border-radius:50%;background:${store?.color||'#888'};display:inline-block"></span>${store?.name||'—'}</span></td>
+        <td class="cost-val" style="color:var(--green)">$${(+p.price).toFixed(2)}</td>
+        <td style="color:var(--muted)">${p.date}</td>
+        <td style="color:var(--muted)">${p.notes||'—'}</td>
+        <td><button class="btn btn-danger btn-sm" onclick="deletePrice('${p.id}')">✕</button></td>
+      </tr>`;
+    }).join('');
+  }
+}
+function deleteStore(id) {
+  if (!confirm('Remove this store?')) return;
+  state.stores = state.stores.filter(s=>s.id!==id);
+  state.items.forEach(i=>{ if(i.bestStore===id) i.bestStore=''; });
+  save(); renderStores(); refreshStoreSelects();
+}
+function deletePrice(id) {
+  state.prices = state.prices.filter(p=>p.id!==id);
+  save(); renderStores();
+}
+
+// ── Dashboard ────────────────────────────────────────────────────────────────
+function renderDashboard() { renderDashboardStats(); }
+function renderDashboardStats() {
+  // Totals
+  const total = state.items.reduce((s,i)=>{
+    const tb=Math.max(0,i.need-i.onHand); return s+tb*(i.bestPrice||0);},0);
+  document.getElementById('d-total-cost').textContent = '$'+total.toFixed(2);
+  const budget = state.budget||200;
+  document.getElementById('budget-input').value = budget;
+  const pct = Math.min(100, total/budget*100);
+  document.getElementById('d-budget-bar').style.width = pct+'%';
+  document.getElementById('d-budget-bar').style.background = pct>90?'var(--red)':pct>70?'var(--amber)':'var(--green)';
+  document.getElementById('d-budget-lbl').textContent = `Budget: $${budget} | Used: ${pct.toFixed(0)}%`;
+
+  // Low stock
+  const low = state.items.filter(i=>i.onHand < i.need*0.25 && i.need>0);
+  document.getElementById('d-low-count').textContent = low.length;
+  document.getElementById('d-items-needed').textContent = state.items.filter(i=>Math.max(0,i.need-i.onHand)>0).length;
+  document.getElementById('d-stores-count').textContent = state.stores.length;
+
+  // Low list
+  const lowEl = document.getElementById('d-low-list');
+  lowEl.innerHTML = low.length ? low.map(i=>`
+    <div class="alert-row">
+      <span class="alert-icon">⚠</span>
+      <span style="flex:1"><strong>${i.name}</strong> — ${i.onHand} ${i.unit} on hand, need ${i.need}</span>
+      <span class="tag tag-amber">Need ${Math.max(0,i.need-i.onHand)} ${i.unit}</span>
+    </div>`).join('') : '<div class="empty">All stocked up ✓</div>';
+
+  // Cost by store
+  const storeEl = document.getElementById('d-store-costs');
+  if (!state.stores.length) { storeEl.innerHTML = '<div class="empty">Add stores first</div>'; }
+  else {
+    const storeCosts = state.stores.map(s => {
+      const cost = state.items.reduce((sum,item)=>{
+        if(item.bestStore===s.id){ const tb=Math.max(0,item.need-item.onHand); return sum+tb*(item.bestPrice||0); }
+        return sum;
+      },0);
+      const count = state.items.filter(i=>i.bestStore===s.id).length;
+      return {s, cost, count};
+    }).sort((a,b)=>b.cost-a.cost);
+    storeEl.innerHTML = storeCosts.map(({s,cost,count})=>`
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <div style="width:10px;height:10px;border-radius:50%;background:${s.color};flex-shrink:0"></div>
+        <span style="flex:1;font-size:13px">${s.name}</span>
+        <span style="font-size:11px;color:var(--muted)">${count} items</span>
+        <span class="cost-val" style="color:var(--green)">$${cost.toFixed(2)}</span>
+      </div>
+      <div class="pbar-wrap" style="margin-bottom:8px">
+        <div class="pbar" style="background:${s.color};width:${total>0?Math.min(100,cost/total*100):0}%"></div>
+      </div>`).join('');
+  }
+
+  // Best prices
+  const bpTbody = document.getElementById('d-best-prices');
+  const itemsWithPrices = state.prices.length ? (() => {
+    const byItem = {};
+    state.prices.forEach(p=>{
+      if(!byItem[p.itemId]||p.price<byItem[p.itemId].price) byItem[p.itemId]={...p};
+    });
+    return Object.values(byItem).map(p=>{
+      const item=state.items.find(i=>i.id===p.itemId);
+      const store=state.stores.find(s=>s.id===p.storeId);
+      const allP=state.prices.filter(x=>x.itemId===p.itemId);
+      const avg=allP.reduce((s,x)=>s+x.price,0)/allP.length;
+      const savings=avg-p.price;
+      return {item,store,p,savings,avg};
+    }).filter(x=>x.item&&x.store);
+  })() : [];
+  bpTbody.innerHTML = itemsWithPrices.length ? itemsWithPrices.map(({item,store,p,savings})=>`
+    <tr class="best-price">
+      <td>${item.name}</td>
+      <td class="cost-val" style="color:var(--green)">$${(+p.price).toFixed(2)}</td>
+      <td><span class="store-badge"><span style="width:8px;height:8px;border-radius:50%;background:${store.color};display:inline-block"></span>${store.name}</span></td>
+      <td>${savings>0?`<span class="tag tag-green">-$${savings.toFixed(2)}</span>`:'<span class="tag tag-muted">cheapest</span>'}</td>
+    </tr>`).join('') : '<tr><td colspan="4" class="empty">No price history yet</td></tr>';
+
+  // Stock levels
+  const stockEl = document.getElementById('d-stock-levels');
+  const needItems = state.items.filter(i=>i.need>0).slice(0,12);
+  stockEl.innerHTML = needItems.map(i=>{
+    const pct = Math.min(100, i.onHand/i.need*100);
+    const color = pct>=80?'var(--green)':pct>=40?'var(--amber)':'var(--red)';
+    return `<div style="margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">
+        <span>${i.name}</span><span style="color:${color};font-family:var(--mono)">${i.onHand}/${i.need} ${i.unit}</span>
+      </div>
+      <div class="pbar-wrap"><div class="pbar" style="background:${color};width:${pct}%"></div></div>
+    </div>`;
+  }).join('');
+}
+function saveBudget() {
+  state.budget = +document.getElementById('budget-input').value||200;
+  save(); renderDashboardStats();
+}
+
+// ── Modal helpers ─────────────────────────────────────────────────────────────
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+let editItemId = null;
+function openAddItem() {
+  editItemId = null;
+  document.getElementById('modal-item-title').textContent = 'Add Item';
+  ['fi-name','fi-unit','fi-notes'].forEach(id=>document.getElementById(id).value='');
+  ['fi-onhand','fi-need','fi-price'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('fi-cat').value = '🥩 Proteins';
+  refreshStoreSelects();
+  openModal('modal-item');
+}
+function saveItem() {
+  const name = document.getElementById('fi-name').value.trim();
+  if (!name) return;
+  const item = {
+    id: editItemId || 'item_'+Date.now(),
+    name, cat: document.getElementById('fi-cat').value,
+    onHand: +document.getElementById('fi-onhand').value||0,
+    need: +document.getElementById('fi-need').value||0,
+    unit: document.getElementById('fi-unit').value.trim(),
+    bestPrice: +document.getElementById('fi-price').value||0,
+    bestStore: document.getElementById('fi-store').value,
+    notes: document.getElementById('fi-notes').value.trim(),
+    checked: false
+  };
+  if (editItemId) { const i=state.items.findIndex(x=>x.id===editItemId); if(i>=0) state.items[i]=item; }
+  else state.items.push(item);
+  save(); closeModal('modal-item'); renderShopping(); renderDashboardStats();
+}
+function openAddStore() {
+  document.getElementById('fs-name').value='';
+  document.getElementById('fs-notes').value='';
+  openModal('modal-store');
+}
+function saveStore() {
+  const name = document.getElementById('fs-name').value.trim();
+  if (!name) return;
+  state.stores.push({ id:'store_'+Date.now(), name,
+    color: document.getElementById('fs-color').value,
+    notes: document.getElementById('fs-notes').value.trim() });
+  save(); closeModal('modal-store'); refreshStoreSelects();
+  renderDashboard(); renderShopping(); renderStores();
+}
+function openLogPrice() {
+  refreshStoreSelects();
+  document.getElementById('fp-date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('fp-price').value='';
+  document.getElementById('fp-notes').value='';
+  openModal('modal-price');
+}
+function quickLogPrice(itemId) {
+  refreshStoreSelects();
+  document.getElementById('fp-item').value = itemId;
+  document.getElementById('fp-date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('fp-price').value='';
+  document.getElementById('fp-notes').value='';
+  openModal('modal-price');
+}
+function savePrice() {
+  const storeId = document.getElementById('fp-store').value;
+  const itemId  = document.getElementById('fp-item').value;
+  const price   = +document.getElementById('fp-price').value;
+  if (!storeId||!itemId||!price) return;
+  state.prices.push({ id:'price_'+Date.now(), storeId, itemId, price,
+    date: document.getElementById('fp-date').value,
+    notes: document.getElementById('fp-notes').value.trim() });
+  // Auto-update best price on item
+  const item = state.items.find(i=>i.id===itemId);
+  if (item && (!item.bestPrice || price < item.bestPrice)) {
+    item.bestPrice=price; item.bestStore=storeId;
+  }
+  save(); closeModal('modal-price'); renderStores(); renderDashboardStats(); renderShopping();
+}
+function refreshStoreSelects() {
+  const opts = state.stores.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+  const itemOpts = state.items.map(i=>`<option value="${i.id}">${i.name}</option>`).join('');
+  ['fi-store','fp-store'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){ el.innerHTML=(id==='fi-store'?'<option value="">—</option>':'')+opts; }
+  });
+  document.getElementById('fp-item').innerHTML = '<option value="">— select item —</option>'+itemOpts;
+  // Store filter
+  const sf=document.getElementById('store-filter');
+  sf.innerHTML='<option value="">All stores</option>'+opts;
+}
+
+// ── Sync with Google Sheets ───────────────────────────────────────────────────
+async function syncAll() {
+  if (!SCRIPT_URL) {
+    openSettings();
+    return;
+  }
+  setSyncStatus("syncing…");
+  try {
+    // Push
+    await fetch(SCRIPT_URL, { method:'POST', body: JSON.stringify({action:'saveAll', state}), mode:'no-cors' });
+    // Pull
+    const res = await fetch(SCRIPT_URL+'?action=loadAll');
+    const data = await res.json();
+    if (data.items)   state.items   = data.items;
+    if (data.stores)  state.stores  = data.stores;
+    if (data.prices)  state.prices  = data.prices;
+    if (data.budget)  state.budget  = data.budget;
+    save();
+    setSyncStatus("synced "+new Date().toLocaleTimeString());
+    renderShopping(); renderDashboard(); renderStores();
+  } catch(e) {
+    setSyncStatus("sync failed");
+    console.error(e);
+  }
+}
+function setSyncStatus(msg) { document.getElementById('sync-status').textContent = msg; }
+
+
+// ── Settings ─────────────────────────────────────────────────────────────────
+function openSettings() {
+  document.getElementById('settings-script-url').value = SCRIPT_URL || '';
+  document.getElementById('settings-budget').value = state.budget || 200;
+  updateSettingsStatus();
+  openModal('modal-settings');
+}
+function saveSettings() {
+  const url = document.getElementById('settings-script-url').value.trim();
+  const budget = +document.getElementById('settings-budget').value || 200;
+  SCRIPT_URL = url;
+  state.budget = budget;
+  if (url) localStorage.setItem('fmp_script_url', url);
+  else localStorage.removeItem('fmp_script_url');
+  save();
+  updateSettingsStatus();
+  closeModal('modal-settings');
+  renderDashboardStats();
+}
+function updateSettingsStatus() {
+  const dot = document.getElementById('settings-status-dot');
+  const txt = document.getElementById('settings-status-text');
+  const url = document.getElementById('settings-script-url')?.value || SCRIPT_URL;
+  if (!url) {
+    dot.className = 'status-dot disconnected';
+    txt.textContent = 'Not connected — paste your Apps Script URL below';
+  } else if (url.includes('script.google.com/macros/s/')) {
+    dot.className = 'status-dot connected';
+    txt.textContent = 'URL looks good — test the connection to confirm';
+  } else {
+    dot.className = 'status-dot unknown';
+    txt.textContent = 'URL format unexpected — make sure it ends in /exec';
+  }
+}
+async function testConnection() {
+  const url = document.getElementById('settings-script-url').value.trim();
+  const hint = document.getElementById('settings-url-hint');
+  if (!url) { hint.textContent = 'Enter a URL first.'; return; }
+  hint.textContent = 'Testing…';
+  try {
+    const res = await fetch(url + '?action=loadAll');
+    const data = await res.json();
+    if (data.items !== undefined) {
+      hint.style.color = 'var(--green)';
+      hint.textContent = '✓ Connected — Sheet responded with ' + data.items.length + ' items';
+      document.getElementById('settings-status-dot').className = 'status-dot connected';
+      document.getElementById('settings-status-text').textContent = 'Connected to Google Sheets';
+    } else {
+      hint.style.color = 'var(--amber)';
+      hint.textContent = '⚠ Got a response but unexpected format: ' + JSON.stringify(data).slice(0,80);
+    }
+  } catch(e) {
+    hint.style.color = 'var(--red)';
+    hint.textContent = '✕ Connection failed — check the URL and make sure deployment is set to Anyone';
+  }
+}
+function exportData() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'family-planner-backup-' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+}
+function resetItems() {
+  if (!confirm('Reset all items to the default meal plan list? Your on-hand amounts, prices, and stores will be cleared.')) return;
+  seedDefaults();
+  save(); closeModal('modal-settings'); renderShopping(); renderDashboardStats();
+}
+function clearAllData() {
+  if (!confirm('Clear ALL data including stores, prices, and items? This cannot be undone.')) return;
+  state = { stores:[], items:[], prices:[], budget:200, mealView:'david' };
+  seedDefaults();
+  save(); closeModal('modal-settings');
+  renderShopping(); renderDashboard(); renderStores();
+}
+
+// ── Close modals on bg click ──────────────────────────────────────────────────
+document.querySelectorAll('.modal-bg').forEach(bg=>{
+  bg.addEventListener('click', e=>{ if(e.target===bg) bg.classList.remove('open'); });
+});
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+load();
+refreshStoreSelects();
+renderMealPlan();
+renderDashboardStats();
+</script>
+</body>
+</html>
