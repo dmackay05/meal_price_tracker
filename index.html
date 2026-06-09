@@ -2,177 +2,297 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Family Meal & Shopping Tracker</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Family Planner">
+<meta name="theme-color" content="#0f1117">
+<title>Family Meal Planner</title>
+<link rel="manifest" href="data:application/json,{
+  %22name%22:%22Family%20Meal%20Planner%22,
+  %22short_name%22:%22Meal%20Plan%22,
+  %22start_url%22:%22.%22,
+  %22display%22:%22standalone%22,
+  %22background_color%22:%22%230f1117%22,
+  %22theme_color%22:%22%230f1117%22,
+  %22description%22:%22Family%20meal%20planning%20and%20grocery%20tracker%22,
+  %22icons%22:[{%22src%22:%22data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230f1117'/><text y='.9em' font-size='80'>🥗</text></svg>%22,%22sizes%22:%22any%22,%22type%22:%22image/svg+xml%22}]
+}">
 <style>
-  :root {
-    --bg:       #0f1117;
-    --card:     #1a1d27;
-    --card2:    #222536;
-    --border:   #2a2d3e;
-    --text:     #e8eaf0;
-    --muted:    #8b8fa8;
-    --blue:     #4f8ef7;
-    --green:    #3ecf8e;
-    --amber:    #f5a623;
-    --red:      #f56565;
-    --purple:   #a78bfa;
-    --teal:     #5eead4;
-    --font:     'Inter', system-ui, sans-serif;
-    --mono:     'JetBrains Mono', 'Fira Mono', monospace;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; min-height: 100vh; }
+:root {
+  --bg:      #0f1117;
+  --card:    #1a1d27;
+  --card2:   #222536;
+  --border:  #2a2d3e;
+  --text:    #e8eaf0;
+  --muted:   #8b8fa8;
+  --blue:    #4f8ef7;
+  --green:   #3ecf8e;
+  --amber:   #f5a623;
+  --red:     #f56565;
+  --purple:  #a78bfa;
+  --teal:    #5eead4;
+  --nav-h:   60px;
+  --top-h:   56px;
+  --safe-b:  env(safe-area-inset-bottom, 0px);
+  --safe-t:  env(safe-area-inset-top, 0px);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html { height: 100%; }
+body {
+  background: var(--bg); color: var(--text);
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 15px; height: 100%;
+  overflow-x: hidden;
+  padding-bottom: calc(var(--nav-h) + var(--safe-b));
+  padding-top: calc(var(--top-h) + var(--safe-t));
+}
 
-  /* ── Top nav ── */
-  .topbar { background: var(--card); border-bottom: 1px solid var(--border); padding: 0 20px; display: flex; align-items: center; gap: 0; position: sticky; top: 0; z-index: 100; }
-  .topbar-brand { font-size: 15px; font-weight: 700; color: var(--green); padding: 16px 20px 16px 0; border-right: 1px solid var(--border); margin-right: 4px; white-space: nowrap; }
-  .tab-btn { padding: 16px 18px; font-size: 13px; font-weight: 500; color: var(--muted); background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; transition: all .15s; white-space: nowrap; }
-  .tab-btn:hover { color: var(--text); }
-  .tab-btn.active { color: var(--green); border-bottom-color: var(--green); }
-  .topbar-right { margin-left: auto; display: flex; gap: 8px; align-items: center; }
-  .sync-btn { background: var(--green); color: #0f1117; border: none; border-radius: 6px; padding: 6px 14px; font-size: 12px; font-weight: 700; cursor: pointer; }
-  .sync-btn:hover { opacity: .85; }
-  .sync-status { font-size: 11px; color: var(--muted); font-family: var(--mono); }
-  .gear-btn { background: none; border: 1px solid var(--border); border-radius: 6px; color: var(--muted); font-size: 16px; width: 32px; height: 32px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; }
-  .gear-btn:hover { color: var(--text); border-color: var(--green); transform: rotate(30deg); }
-  .settings-section { border-top: 1px solid var(--border); margin-top: 14px; padding-top: 14px; }
-  .settings-section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 10px; }
-  .url-input-wrap { display: flex; gap: 8px; }
-  .url-input-wrap input { flex: 1; font-family: var(--mono); font-size: 12px; }
-  .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
-  .status-dot.connected { background: var(--green); }
-  .status-dot.disconnected { background: var(--red); }
-  .status-dot.unknown { background: var(--amber); }
+/* ── Top bar ── */
+.topbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  height: calc(var(--top-h) + var(--safe-t));
+  padding-top: var(--safe-t);
+  background: var(--card); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; padding-left: 16px; padding-right: 12px; gap: 10px;
+}
+.topbar-brand { font-size: 17px; font-weight: 800; color: var(--green); flex: 1; }
+.topbar-actions { display: flex; gap: 8px; align-items: center; }
+.icon-btn {
+  background: var(--card2); border: 1px solid var(--border);
+  border-radius: 8px; color: var(--text); font-size: 17px;
+  width: 36px; height: 36px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .15s;
+}
+.icon-btn:active { background: var(--border); }
+.sync-pill {
+  background: var(--green); color: #0f1117;
+  border: none; border-radius: 8px;
+  padding: 0 12px; height: 36px; font-size: 13px; font-weight: 700;
+  cursor: pointer; white-space: nowrap;
+}
+.sync-pill:active { opacity: .8; }
+.sync-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--muted); display: inline-block;
+  transition: background .3s;
+}
+.sync-dot.ok { background: var(--green); }
+.sync-dot.err { background: var(--red); }
+.sync-dot.spin { background: var(--amber); animation: pulse 1s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
 
-  /* ── Panels ── */
-  .panel { display: none; padding: 20px; max-width: 1200px; margin: 0 auto; }
-  .panel.active { display: block; }
+/* ── Bottom nav ── */
+.bottom-nav {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+  height: calc(var(--nav-h) + var(--safe-b));
+  padding-bottom: var(--safe-b);
+  background: var(--card); border-top: 1px solid var(--border);
+  display: flex;
+}
+.nav-btn {
+  flex: 1; background: none; border: none; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 3px; color: var(--muted);
+  font-size: 10px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; padding-bottom: 2px;
+  transition: color .15s;
+}
+.nav-btn .nav-icon { font-size: 22px; line-height: 1; }
+.nav-btn.active { color: var(--green); }
+.nav-btn.active .nav-icon { filter: drop-shadow(0 0 6px rgba(62,207,142,.5)); }
 
-  /* ── Cards ── */
-  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 14px; }
-  .card-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 12px; }
+/* ── Panels ── */
+.panel { display: none; padding: 14px 14px 10px; min-height: 100%; }
+.panel.active { display: block; }
 
-  /* ── Grid layouts ── */
-  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
-  .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
-  @media(max-width: 700px) { .grid2,.grid3,.grid4 { grid-template-columns: 1fr; } }
+/* ── Cards ── */
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+.card-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); margin-bottom: 10px; }
 
-  /* ── Stat tiles ── */
-  .stat { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
-  .stat-val { font-size: 28px; font-weight: 800; font-family: var(--mono); line-height: 1; margin-bottom: 4px; }
-  .stat-lbl { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+/* ── Stat row ── */
+.stat-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.stat-row.cols3 { grid-template-columns: 1fr 1fr 1fr; }
+.stat-tile { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 12px; }
+.stat-val { font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; margin-bottom: 3px; }
+.stat-lbl { font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
 
-  /* ── Tables ── */
-  .tbl-wrap { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th { background: var(--card2); color: var(--muted); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
-  td { padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
-  tr:last-child td { border-bottom: none; }
-  tr:hover td { background: rgba(255,255,255,.02); }
+/* ── Progress bar ── */
+.pbar-wrap { background: var(--card2); border-radius: 4px; height: 5px; overflow: hidden; margin-top: 8px; }
+.pbar { height: 100%; border-radius: 4px; transition: width .4s; min-width: 0; }
 
-  /* ── Tags ── */
-  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; font-family: var(--mono); }
-  .tag-green  { background: rgba(62,207,142,.15); color: var(--green); }
-  .tag-amber  { background: rgba(245,166,35,.15);  color: var(--amber); }
-  .tag-red    { background: rgba(245,101,101,.15); color: var(--red); }
-  .tag-blue   { background: rgba(79,142,247,.15);  color: var(--blue); }
-  .tag-purple { background: rgba(167,139,250,.15); color: var(--purple); }
-  .tag-muted  { background: rgba(139,143,168,.1);  color: var(--muted); }
+/* ── Tags / chips ── */
+.chip { display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+.chip-green  { background: rgba(62,207,142,.15); color: var(--green); }
+.chip-amber  { background: rgba(245,166,35,.15);  color: var(--amber); }
+.chip-red    { background: rgba(245,101,101,.15); color: var(--red); }
+.chip-blue   { background: rgba(79,142,247,.15);  color: var(--blue); }
+.chip-purple { background: rgba(167,139,250,.15); color: var(--purple); }
+.chip-muted  { background: rgba(139,143,168,.12); color: var(--muted); }
 
-  /* ── Buttons ── */
-  .btn { border: none; border-radius: 6px; padding: 7px 14px; font-size: 12px; font-weight: 600; cursor: pointer; transition: opacity .15s; }
-  .btn-primary { background: var(--green); color: #0f1117; }
-  .btn-ghost   { background: var(--card2); color: var(--text); border: 1px solid var(--border); }
-  .btn-danger  { background: rgba(245,101,101,.15); color: var(--red); border: 1px solid rgba(245,101,101,.3); }
-  .btn:hover   { opacity: .82; }
-  .btn-sm { padding: 4px 10px; font-size: 11px; }
+/* ── Buttons ── */
+.btn { border: none; border-radius: 10px; padding: 11px 18px; font-size: 14px; font-weight: 700; cursor: pointer; transition: opacity .15s; display: inline-flex; align-items: center; gap: 6px; }
+.btn-primary { background: var(--green); color: #0f1117; }
+.btn-ghost   { background: var(--card2); color: var(--text); border: 1px solid var(--border); }
+.btn-danger  { background: rgba(245,101,101,.12); color: var(--red); border: 1px solid rgba(245,101,101,.25); }
+.btn:active  { opacity: .75; }
+.btn-sm { padding: 7px 12px; font-size: 13px; border-radius: 8px; }
+.btn-full { width: 100%; justify-content: center; }
 
-  /* ── Inputs ── */
-  input, select, textarea { background: var(--card2); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 13px; padding: 7px 10px; outline: none; font-family: var(--font); }
-  input:focus, select:focus { border-color: var(--green); }
-  input[type=number] { font-family: var(--mono); }
-  select option { background: var(--card2); }
+/* ── Inputs ── */
+input, select, textarea {
+  background: var(--card2); border: 1px solid var(--border);
+  border-radius: 10px; color: var(--text); font-size: 16px;
+  padding: 11px 13px; outline: none;
+  font-family: inherit; -webkit-appearance: none; width: 100%;
+}
+input:focus, select:focus { border-color: var(--green); }
+input[type=number] { font-variant-numeric: tabular-nums; }
+select option { background: var(--card2); }
+.input-sm { font-size: 14px; padding: 8px 10px; border-radius: 8px; }
 
-  /* ── Toggle pill ── */
-  .toggle-pill { display: flex; background: var(--card2); border: 1px solid var(--border); border-radius: 8px; padding: 3px; gap: 2px; width: fit-content; margin-bottom: 16px; }
-  .toggle-pill button { border: none; border-radius: 6px; padding: 6px 16px; font-size: 12px; font-weight: 600; cursor: pointer; background: transparent; color: var(--muted); transition: all .15s; }
-  .toggle-pill button.active { background: var(--green); color: #0f1117; }
+/* ── Toggle pill ── */
+.toggle-pill { display: flex; background: var(--card2); border: 1px solid var(--border); border-radius: 10px; padding: 3px; margin-bottom: 14px; }
+.toggle-pill button { flex: 1; border: none; border-radius: 8px; padding: 9px 12px; font-size: 14px; font-weight: 700; cursor: pointer; background: transparent; color: var(--muted); transition: all .15s; }
+.toggle-pill button.active { background: var(--green); color: #0f1117; }
 
-  /* ── Section headers ── */
-  .section-hdr { font-size: 13px; font-weight: 700; color: var(--text); margin: 20px 0 10px; display: flex; align-items: center; gap: 8px; }
-  .section-hdr::after { content:''; flex:1; height:1px; background: var(--border); }
+/* ── Section header ── */
+.sec-hdr { font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin: 18px 0 8px; display: flex; align-items: center; gap: 8px; }
+.sec-hdr::after { content:''; flex:1; height:1px; background: var(--border); }
 
-  /* ── Meal plan ── */
-  .meal-day { background: var(--card); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 10px; overflow: hidden; }
-  .meal-day-hdr { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--card2); border-bottom: 1px solid var(--border); }
-  .meal-day-name { font-weight: 700; font-size: 13px; min-width: 90px; }
-  .meal-day-title { font-size: 14px; font-weight: 600; color: var(--text); }
-  .meal-day-body { padding: 12px 16px; font-size: 13px; color: var(--muted); line-height: 1.6; }
-  .meal-day-meta { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+/* ── Meal day cards ── */
+.meal-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 10px; overflow: hidden; }
+.meal-card-hdr { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: var(--card2); }
+.meal-day-label { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; min-width: 36px; }
+.meal-name { font-size: 15px; font-weight: 700; flex: 1; }
+.meal-prep-time { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.meal-card-body { padding: 12px 14px; }
+.meal-desc { font-size: 14px; color: var(--muted); line-height: 1.55; margin-bottom: 10px; }
+.meal-tags { display: flex; flex-wrap: wrap; gap: 6px; }
 
-  /* ── Shopping list ── */
-  .cat-section { margin-bottom: 6px; }
-  .cat-hdr { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--card2); border-radius: 8px 8px 0 0; border: 1px solid var(--border); cursor: pointer; user-select: none; }
-  .cat-hdr-label { font-weight: 700; font-size: 13px; flex: 1; }
-  .cat-body { border: 1px solid var(--border); border-top: none; border-radius: 0 0 8px 8px; overflow: hidden; }
-  .cat-body.collapsed { display: none; }
+/* ── Shopping items ── */
+.shop-item { display: flex; align-items: flex-start; gap: 12px; padding: 13px 0; border-bottom: 1px solid var(--border); }
+.shop-item:last-child { border-bottom: none; }
+.shop-check { width: 24px; height: 24px; border: 2px solid var(--border); border-radius: 6px; flex-shrink: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; margin-top: 1px; transition: all .15s; }
+.shop-check.checked { background: var(--green); border-color: var(--green); color: #0f1117; font-size: 14px; }
+.shop-item-main { flex: 1; min-width: 0; }
+.shop-item-name { font-size: 15px; font-weight: 600; margin-bottom: 3px; }
+.shop-item-name.checked-text { text-decoration: line-through; color: var(--muted); }
+.shop-item-meta { font-size: 12px; color: var(--muted); }
+.shop-item-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+.shop-item-cost { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--green); }
+.shop-item-tobuy { font-size: 12px; color: var(--amber); font-weight: 600; }
+.shop-item-stocked { font-size: 12px; color: var(--green); }
 
-  /* ── Price comparison ── */
-  .store-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; background: var(--card2); border: 1px solid var(--border); }
-  .best-price td { background: rgba(62,207,142,.04) !important; }
+/* ── Category accordion ── */
+.cat-accordion { background: var(--card); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 8px; overflow: hidden; }
+.cat-accordion-hdr { display: flex; align-items: center; gap: 10px; padding: 13px 14px; cursor: pointer; user-select: none; -webkit-user-select: none; }
+.cat-accordion-hdr:active { background: var(--card2); }
+.cat-accordion-icon { font-size: 18px; }
+.cat-accordion-name { font-size: 15px; font-weight: 700; flex: 1; }
+.cat-accordion-meta { display: flex; align-items: center; gap: 8px; }
+.cat-accordion-body { padding: 0 14px; display: none; }
+.cat-accordion-body.open { display: block; }
+.cat-chevron { color: var(--muted); font-size: 13px; transition: transform .2s; }
+.cat-chevron.open { transform: rotate(180deg); }
 
-  /* ── Progress bar ── */
-  .pbar-wrap { background: var(--card2); border-radius: 4px; height: 6px; overflow: hidden; margin-top: 6px; }
-  .pbar { height: 100%; border-radius: 4px; transition: width .4s; }
+/* ── Edit row (inline expand) ── */
+.item-edit-panel { background: var(--card2); border-radius: 10px; padding: 12px; margin: 0 0 10px; display: none; }
+.item-edit-panel.open { display: block; }
+.edit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+.edit-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
 
-  /* ── Modal ── */
-  .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 200; align-items: center; justify-content: center; }
-  .modal-bg.open { display: flex; }
-  .modal { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; width: 90%; max-width: 480px; max-height: 90vh; overflow-y: auto; }
-  .modal-title { font-size: 15px; font-weight: 700; margin-bottom: 16px; }
-  .form-row { margin-bottom: 12px; }
-  .form-row label { display: block; font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 5px; }
-  .form-row input, .form-row select { width: 100%; }
-  .form-actions { display: flex; gap: 8px; margin-top: 16px; justify-content: flex-end; }
+/* ── Store cards ── */
+.store-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 10px; }
+.store-card-hdr { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.store-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+.store-name { font-size: 16px; font-weight: 700; flex: 1; }
 
-  /* ── Chart placeholder ── */
-  .chart-area { width: 100%; height: 160px; position: relative; }
-  canvas { width: 100% !important; }
+/* ── Price history rows ── */
+.price-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+.price-row:last-child { border-bottom: none; }
+.price-store-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.price-item-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.price-val { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--green); }
+.price-date { font-size: 12px; color: var(--muted); }
 
-  /* ── Low stock alert ── */
-  .alert-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: rgba(245,166,35,.08); border: 1px solid rgba(245,166,35,.2); border-radius: 8px; margin-bottom: 6px; font-size: 13px; }
-  .alert-icon { font-size: 16px; }
+/* ── Alert items ── */
+.alert-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: rgba(245,166,35,.07); border: 1px solid rgba(245,166,35,.2); border-radius: 10px; margin-bottom: 8px; font-size: 14px; }
 
-  /* ── WoW principles ── */
-  .wow-pill { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: var(--card2); border: 1px solid var(--border); border-radius: 20px; font-size: 12px; margin: 3px; }
+/* ── Modal (bottom sheet on mobile) ── */
+.modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 200; }
+.modal-bg.open { display: block; }
+.modal {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 201;
+  background: var(--card); border-top: 1px solid var(--border);
+  border-radius: 20px 20px 0 0;
+  padding: 0 16px calc(20px + var(--safe-b));
+  max-height: 92vh; overflow-y: auto;
+  transform: translateY(100%);
+  transition: transform .3s cubic-bezier(.32,.72,0,1);
+}
+.modal.open {
+  transform: translateY(0);
+}
+.modal-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 10px auto 16px; }
+.modal-title { font-size: 18px; font-weight: 800; margin-bottom: 16px; }
+.form-row { margin-bottom: 14px; }
+.form-row label { display: block; font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
+.form-actions { display: flex; gap: 10px; margin-top: 16px; }
+.form-actions .btn { flex: 1; justify-content: center; }
 
-  /* ── Scrollbar ── */
-  ::-webkit-scrollbar { width: 5px; height: 5px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+/* ── Settings ── */
+.settings-block { border-top: 1px solid var(--border); padding-top: 16px; margin-top: 16px; }
+.settings-block-title { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 10px; }
+.connection-status { display: flex; align-items: center; gap: 10px; padding: 12px; background: var(--card2); border-radius: 10px; border: 1px solid var(--border); margin-bottom: 14px; font-size: 14px; }
+.status-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.status-dot.ok  { background: var(--green); }
+.status-dot.bad { background: var(--red); }
+.status-dot.unk { background: var(--amber); }
+.setup-step { display: flex; gap: 12px; padding: 8px 0; font-size: 14px; line-height: 1.5; }
+.setup-num { width: 24px; height: 24px; border-radius: 50%; background: var(--green); color: #0f1117; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
 
-  .empty { color: var(--muted); font-size: 13px; padding: 20px; text-align: center; }
-  .cost-val { font-family: var(--mono); font-size: 13px; }
-  .inline-input { width: 70px; padding: 4px 6px; font-size: 12px; }
-  .inline-input-lg { width: 100px; }
-  .store-col select { min-width: 110px; font-size: 12px; padding: 4px 6px; }
+/* ── Install banner ── */
+.install-banner { background: linear-gradient(135deg, rgba(62,207,142,.12), rgba(79,142,247,.08)); border: 1px solid rgba(62,207,142,.25); border-radius: 12px; padding: 14px; margin-bottom: 12px; display: none; }
+.install-banner.show { display: flex; gap: 12px; align-items: center; }
+.install-banner-text { flex: 1; font-size: 14px; line-height: 1.4; }
+.install-banner-text strong { color: var(--green); }
+
+/* ── WoW pills ── */
+.wow-wrap { display: flex; flex-wrap: wrap; gap: 6px; }
+.wow-pill { background: var(--card2); border: 1px solid var(--border); border-radius: 20px; padding: 6px 11px; font-size: 13px; }
+
+/* ── Fab button ── */
+.fab { position: fixed; bottom: calc(var(--nav-h) + var(--safe-b) + 16px); right: 16px; width: 52px; height: 52px; border-radius: 50%; background: var(--green); color: #0f1117; font-size: 24px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 20px rgba(62,207,142,.35); z-index: 90; transition: transform .15s; }
+.fab:active { transform: scale(.93); }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* ── Utilities ── */
+.text-muted { color: var(--muted); }
+.text-green { color: var(--green); }
+.text-amber { color: var(--amber); }
+.mono { font-variant-numeric: tabular-nums; }
+.empty-state { text-align: center; padding: 32px 20px; color: var(--muted); font-size: 15px; line-height: 1.6; }
+.empty-icon { font-size: 40px; margin-bottom: 10px; }
+.divider { height: 1px; background: var(--border); margin: 4px 0; }
+a { color: var(--blue); text-decoration: none; }
+code { background: var(--card2); padding: 2px 6px; border-radius: 5px; font-size: 13px; }
 </style>
 </head>
 <body>
 
-<!-- ── Top Nav ─────────────────────────────────────────────────────────────── -->
+<!-- ── Top bar ─────────────────────────────────────────────────────────────── -->
 <div class="topbar">
   <div class="topbar-brand">🥗 Family Planner</div>
-  <button class="tab-btn active" onclick="showTab('dashboard')">Dashboard</button>
-  <button class="tab-btn" onclick="showTab('mealplan')">Meal Plan</button>
-  <button class="tab-btn" onclick="showTab('shopping')">Shopping</button>
-  <button class="tab-btn" onclick="showTab('stores')">Stores</button>
-  <div class="topbar-right">
-    <span class="sync-status" id="sync-status">not synced</span>
-    <button class="sync-btn" onclick="syncAll()">↑↓ Sync</button>
-    <button class="gear-btn" onclick="openSettings()" title="Settings">⚙</button>
+  <div class="topbar-actions">
+    <span class="sync-dot" id="sync-dot" title="Sync status"></span>
+    <button class="sync-pill" onclick="syncAll()">Sync</button>
+    <button class="icon-btn" onclick="openSettings()" title="Settings">⚙</button>
   </div>
 </div>
 
@@ -181,68 +301,54 @@
 ═════════════════════════════════════════════════════════════════════════════ -->
 <div class="panel active" id="panel-dashboard">
 
-  <div class="grid4" style="margin-bottom:14px">
-    <div class="stat">
-      <div class="stat-val" id="d-total-cost" style="color:var(--green)">$0.00</div>
-      <div class="stat-lbl">Est. Weekly Total</div>
+  <!-- Install banner (shown when PWA installable) -->
+  <div class="install-banner" id="install-banner">
+    <div style="font-size:28px">📲</div>
+    <div class="install-banner-text">
+      <strong>Install this app</strong><br>Add to your home screen for the full app experience
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="installPWA()">Install</button>
+  </div>
+
+  <div class="stat-row" id="d-stats">
+    <div class="stat-tile">
+      <div class="stat-val text-green" id="d-total-cost">$0</div>
+      <div class="stat-lbl">Est. Week</div>
       <div class="pbar-wrap"><div class="pbar" id="d-budget-bar" style="background:var(--green);width:0%"></div></div>
-      <div style="font-size:10px;color:var(--muted);margin-top:4px;font-family:var(--mono)" id="d-budget-lbl">Budget: $—</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px" id="d-budget-lbl">vs $— budget</div>
     </div>
-    <div class="stat">
-      <div class="stat-val" id="d-low-count" style="color:var(--amber)">0</div>
-      <div class="stat-lbl">Items Running Low</div>
+    <div class="stat-tile">
+      <div class="stat-val text-amber" id="d-low-count">0</div>
+      <div class="stat-lbl">Running Low</div>
     </div>
-    <div class="stat">
-      <div class="stat-val" id="d-items-needed" style="color:var(--blue)">0</div>
-      <div class="stat-lbl">Items to Buy This Week</div>
+    <div class="stat-tile">
+      <div class="stat-val" style="color:var(--blue)" id="d-items-needed">0</div>
+      <div class="stat-lbl">To Buy</div>
     </div>
-    <div class="stat">
-      <div class="stat-val" id="d-stores-count" style="color:var(--purple)">0</div>
-      <div class="stat-lbl">Stores Tracked</div>
-    </div>
-  </div>
-
-  <div class="grid2">
-    <!-- Low stock -->
-    <div class="card">
-      <div class="card-title">⚠ Running Low</div>
-      <div id="d-low-list"><div class="empty">All stocked up</div></div>
-    </div>
-
-    <!-- Cost by store -->
-    <div class="card">
-      <div class="card-title">🏪 Estimated Cost by Store</div>
-      <div id="d-store-costs"><div class="empty">No price data yet — add prices in Shopping tab</div></div>
+    <div class="stat-tile">
+      <div class="stat-val" style="color:var(--purple)" id="d-stores-count">0</div>
+      <div class="stat-lbl">Stores</div>
     </div>
   </div>
 
-  <div class="grid2">
-    <!-- Best price summary -->
-    <div class="card">
-      <div class="card-title">💰 Best Price Per Item</div>
-      <div class="tbl-wrap">
-        <table>
-          <thead><tr><th>Item</th><th>Best Price</th><th>Store</th><th>Savings vs Avg</th></tr></thead>
-          <tbody id="d-best-prices"><tr><td colspan="4" class="empty">No price data yet</td></tr></tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- Stock levels -->
-    <div class="card">
-      <div class="card-title">📦 Stock Levels</div>
-      <div id="d-stock-levels"><div class="empty">Add items in Shopping tab</div></div>
-    </div>
-  </div>
-
-  <!-- Budget setting -->
   <div class="card">
-    <div class="card-title">⚙ Weekly Budget</div>
-    <div style="display:flex;align-items:center;gap:10px">
-      <span style="color:var(--muted);font-size:13px">Weekly grocery budget: $</span>
-      <input type="number" id="budget-input" style="width:100px" placeholder="200" oninput="saveBudget()">
-      <span style="color:var(--muted);font-size:12px">Estimated $180–220 for a family of 5 on this plan</span>
-    </div>
+    <div class="card-title">⚠ Running Low</div>
+    <div id="d-low-list"><div class="empty-state" style="padding:10px 0"><div class="text-muted">All stocked up ✓</div></div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🏪 Cost by Store</div>
+    <div id="d-store-costs"><div class="text-muted" style="font-size:14px">Add stores in the Stores tab</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">💰 Best Prices Found</div>
+    <div id="d-best-prices"><div class="text-muted" style="font-size:14px">Log prices in the Shopping tab</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📦 Stock Levels</div>
+    <div id="d-stock-levels"><div class="text-muted" style="font-size:14px">Add items to see stock levels</div></div>
   </div>
 </div>
 
@@ -256,150 +362,126 @@
     <button id="mp-family-btn" onclick="setMealView('family')">👨‍👩‍👧‍👧 Family</button>
   </div>
 
-  <!-- WoW principles -->
-  <div class="card">
-    <div class="card-title">📖 Word of Wisdom Principles</div>
-    <div>
-      <span class="wow-pill">🌾 Grains as foundation</span>
-      <span class="wow-pill">🍎 Fruits & veg in season</span>
-      <span class="wow-pill">🍗 Meat used sparingly</span>
-      <span class="wow-pill">🐟 Fish 1–2× weekly</span>
-      <span class="wow-pill">🫒 Wholesome plants & fats</span>
+  <!-- David targets -->
+  <div id="mp-targets" class="stat-row cols3" style="margin-bottom:12px">
+    <div class="stat-tile"><div class="stat-val text-green" style="font-size:18px">2,200</div><div class="stat-lbl">Cal/day</div></div>
+    <div class="stat-tile"><div class="stat-val" style="color:var(--teal);font-size:18px">170g</div><div class="stat-lbl">Protein</div></div>
+    <div class="stat-tile"><div class="stat-val" style="color:var(--blue);font-size:18px">120+</div><div class="stat-lbl">Oz water</div></div>
+  </div>
+
+  <div class="card" id="mp-wow">
+    <div class="card-title">📖 Word of Wisdom</div>
+    <div class="wow-wrap">
+      <span class="wow-pill">🌾 Whole grains</span>
+      <span class="wow-pill">🍎 Seasonal fruits & veg</span>
+      <span class="wow-pill">🍗 Meat sparingly</span>
+      <span class="wow-pill">🐟 Fish 1–2×/week</span>
+      <span class="wow-pill">🫒 Wholesome fats</span>
       <span class="wow-pill">🚫 No alcohol</span>
     </div>
   </div>
 
-  <!-- David targets (david view only) -->
-  <div id="mp-targets" class="grid4" style="margin-bottom:14px">
-    <div class="stat"><div class="stat-val" style="color:var(--green);font-size:22px">2,200–2,300</div><div class="stat-lbl">Total cal/day</div></div>
-    <div class="stat"><div class="stat-val" style="color:var(--teal);font-size:22px">1,900</div><div class="stat-lbl">Net cal goal</div></div>
-    <div class="stat"><div class="stat-val" style="color:var(--purple);font-size:22px">170g</div><div class="stat-lbl">Protein/day</div></div>
-    <div class="stat"><div class="stat-val" style="color:var(--blue);font-size:22px">120–150</div><div class="stat-lbl">Hydration (oz)</div></div>
+  <div class="sec-hdr">🍳 Breakfast — Pick One</div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <div id="mp-breakfasts"></div>
   </div>
 
-  <!-- Breakfast -->
-  <div class="section-hdr">🍳 Breakfast — Pick One</div>
-  <div class="tbl-wrap card" style="padding:0;margin-bottom:14px">
-    <table>
-      <thead><tr><th>Option</th><th>What It Is</th><th id="bfast-prot-hdr">Protein</th><th>Works For</th></tr></thead>
-      <tbody>
-        <tr><td><strong>Eggs + Toast</strong></td><td>2–3 scrambled eggs in olive oil, whole grain toast, fruit</td><td class="cost-val">~22g</td><td><span class="tag tag-green">Everyone</span></td></tr>
-        <tr><td><strong>Yogurt Bowl</strong></td><td>Greek yogurt + berries + granola or oats</td><td class="cost-val">~20g</td><td><span class="tag tag-green">Everyone</span></td></tr>
-        <tr><td><strong>Oatmeal + Eggs</strong></td><td>Rolled oats with fruit + 2 boiled eggs on the side</td><td class="cost-val">~24g</td><td><span class="tag tag-green">Everyone</span></td></tr>
-        <tr><td><strong>Smoothie</strong></td><td>Whey + Greek yogurt + frozen fruit + milk (Nutribullet)</td><td class="cost-val">~35g</td><td><span class="tag tag-blue">David best</span></td></tr>
-      </tbody>
-    </table>
+  <div class="sec-hdr">🥗 Lunch</div>
+  <div class="card">
+    <div style="font-size:14px;color:var(--muted);margin-bottom:10px">Batch cook Sunday → containers Mon–Fri</div>
+    <div id="mp-lunches"></div>
   </div>
 
-  <!-- Lunch -->
-  <div class="section-hdr">🥗 Lunch — Meal Prep Mon–Fri</div>
-  <div id="mp-lunch-note" class="card" style="font-size:13px;color:var(--muted);margin-bottom:10px">
-    Batch cook 3–4 lbs chicken + big pot of brown rice or quinoa every Sunday. Portion into containers — done.
-  </div>
-  <div class="tbl-wrap card" style="padding:0;margin-bottom:14px">
-    <table>
-      <thead><tr><th>Option</th><th>Components</th><th id="lunch-prot-hdr">Protein</th><th>Notes</th></tr></thead>
-      <tbody>
-        <tr><td><strong>Chicken + Grain Bowl</strong></td><td>Chicken breast, brown rice or quinoa, roasted veg, olive oil</td><td class="cost-val">~45g</td><td>Primary weekday lunch</td></tr>
-        <tr><td><strong>Leftover Dinner</strong></td><td>Previous night's dinner reheated</td><td class="cost-val">~40g</td><td>Zero extra work</td></tr>
-        <tr><td><strong>Wrap</strong></td><td>Chicken, avocado, cheese in whole wheat tortilla</td><td class="cost-val">~40g</td><td>3 minutes</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <!-- 7-day dinners -->
-  <div class="section-hdr">🍽 7-Day Dinner Plan</div>
+  <div class="sec-hdr">🍽 This Week's Dinners</div>
   <div id="mp-dinners"></div>
 
-  <!-- Sunday prep -->
-  <div class="section-hdr">📋 Sunday Meal Prep</div>
-  <div class="grid2">
-    <div class="card">
-      <div class="card-title" id="prep-david-title">For David</div>
-      <ul style="padding-left:16px;font-size:13px;line-height:2;color:var(--muted)">
-        <li>Boil 6–8 eggs → snacks & breakfasts all week</li>
-        <li>Cook 3–4 lbs chicken → lunch containers Mon–Fri</li>
-        <li>Cook large pot of brown rice or quinoa</li>
-        <li>Portion Greek yogurt into grab-and-go containers</li>
-        <li id="prep-weigh-li">Log starting weight for the week</li>
-      </ul>
-    </div>
-    <div class="card">
-      <div class="card-title">For the Family</div>
-      <ul style="padding-left:16px;font-size:13px;line-height:2;color:var(--muted)">
-        <li>Chop onions, bell peppers, garlic → store in containers</li>
-        <li>Start slow cooker if using Wed soup or Sat chili</li>
-        <li>Post dinner list on the fridge</li>
-        <li>Wash and dry salad greens</li>
-        <li>Pre-portion nut snacks into bags</li>
-      </ul>
-    </div>
-  </div>
+  <div class="sec-hdr">📋 Sunday Prep</div>
+  <div class="card" id="mp-prep"></div>
 </div>
 
 <!-- ════════════════════════════════════════════════════════════════════════════
-     SHOPPING LIST
+     SHOPPING
 ═════════════════════════════════════════════════════════════════════════════ -->
 <div class="panel" id="panel-shopping">
 
-  <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
-    <button class="btn btn-primary" onclick="openAddItem()">+ Add Item</button>
-    <button class="btn btn-ghost" onclick="openAddStore()">+ Add Store</button>
-    <button class="btn btn-ghost" onclick="checkAll()">✓ Check All Needed</button>
-    <button class="btn btn-ghost" onclick="clearChecked()">Clear Checked</button>
-    <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
-      <span style="font-size:12px;color:var(--muted)">Filter store:</span>
-      <select id="store-filter" onchange="renderShopping()" style="font-size:12px;padding:5px 8px">
-        <option value="">All stores</option>
-      </select>
+  <div class="card" style="display:flex;gap:16px;align-items:center">
+    <div>
+      <div class="stat-val text-green mono" id="sh-total" style="font-size:20px">$0</div>
+      <div class="stat-lbl">Est. total</div>
+    </div>
+    <div>
+      <div class="stat-val mono" style="color:var(--blue);font-size:20px" id="sh-needed">0</div>
+      <div class="stat-lbl">To buy</div>
+    </div>
+    <div>
+      <div class="stat-val mono" style="color:var(--teal);font-size:20px" id="sh-checked">0</div>
+      <div class="stat-lbl">Checked</div>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:8px;flex-direction:column">
+      <button class="btn btn-ghost btn-sm" onclick="clearChecked()">Clear ✓</button>
     </div>
   </div>
 
-  <!-- Summary bar -->
-  <div class="card" style="display:flex;gap:20px;align-items:center;flex-wrap:wrap;margin-bottom:6px">
-    <div><span style="font-size:12px;color:var(--muted)">Items needed: </span><span id="sh-needed" class="cost-val" style="color:var(--blue)">0</span></div>
-    <div><span style="font-size:12px;color:var(--muted)">Est. total: </span><span id="sh-total" class="cost-val" style="color:var(--green)">$0.00</span></div>
-    <div><span style="font-size:12px;color:var(--muted)">Checked off: </span><span id="sh-checked" class="cost-val" style="color:var(--teal)">0</span></div>
+  <!-- Store filter -->
+  <div style="margin-bottom:10px">
+    <select id="store-filter" onchange="renderShopping()" class="input-sm">
+      <option value="">All stores</option>
+    </select>
   </div>
 
   <div id="shopping-list"></div>
 </div>
 
 <!-- ════════════════════════════════════════════════════════════════════════════
-     STORES / PRICE HISTORY
+     STORES / PRICES
 ═════════════════════════════════════════════════════════════════════════════ -->
 <div class="panel" id="panel-stores">
 
-  <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
-    <button class="btn btn-primary" onclick="openAddStore()">+ Add Store</button>
-    <button class="btn btn-ghost" onclick="openLogPrice()">📝 Log Store Visit</button>
+  <div style="display:flex;gap:8px;margin-bottom:12px">
+    <button class="btn btn-primary btn-sm" onclick="openAddStore()">+ Store</button>
+    <button class="btn btn-ghost btn-sm" onclick="openLogPrice()">📝 Log Price</button>
   </div>
 
-  <!-- Store list -->
-  <div class="section-hdr">Stores</div>
-  <div class="grid3" id="stores-grid">
-    <div class="empty">No stores added yet</div>
-  </div>
+  <div class="sec-hdr">Stores</div>
+  <div id="stores-list"></div>
 
-  <!-- Price history table -->
-  <div class="section-hdr" style="margin-top:20px">Price History</div>
-  <div class="tbl-wrap">
-    <table>
-      <thead><tr><th>Item</th><th>Store</th><th>Price</th><th>Date</th><th>Notes</th><th></th></tr></thead>
-      <tbody id="price-history-body"><tr><td colspan="6" class="empty">No price logs yet</td></tr></tbody>
-    </table>
+  <div class="sec-hdr">Price History</div>
+  <div class="card" style="padding:0 14px">
+    <div id="price-history"></div>
   </div>
 </div>
 
+<!-- FAB for adding items (visible on Shopping tab) -->
+<button class="fab" id="fab-add" onclick="openAddItem()" style="display:none">+</button>
+
 <!-- ════════════════════════════════════════════════════════════════════════════
-     MODALS
+     BOTTOM NAV
+═════════════════════════════════════════════════════════════════════════════ -->
+<nav class="bottom-nav">
+  <button class="nav-btn active" id="nav-dashboard" onclick="showTab('dashboard')">
+    <span class="nav-icon">📊</span>Dashboard
+  </button>
+  <button class="nav-btn" id="nav-mealplan" onclick="showTab('mealplan')">
+    <span class="nav-icon">🍽</span>Meals
+  </button>
+  <button class="nav-btn" id="nav-shopping" onclick="showTab('shopping')">
+    <span class="nav-icon">🛒</span>Shopping
+  </button>
+  <button class="nav-btn" id="nav-stores" onclick="showTab('stores')">
+    <span class="nav-icon">🏪</span>Stores
+  </button>
+</nav>
+
+<!-- ════════════════════════════════════════════════════════════════════════════
+     MODALS (bottom sheets)
 ═════════════════════════════════════════════════════════════════════════════ -->
 
 <!-- Add/Edit Item -->
-<div class="modal-bg" id="modal-item">
-  <div class="modal">
+<div class="modal-bg" id="bg-item" onclick="closeBg('bg-item','modal-item')">
+  <div class="modal" id="modal-item">
+    <div class="modal-handle"></div>
     <div class="modal-title" id="modal-item-title">Add Item</div>
-    <div class="form-row"><label>Item Name</label><input id="fi-name" placeholder="e.g. Chicken breasts"></div>
+    <div class="form-row"><label>Item Name</label><input id="fi-name" placeholder="e.g. Chicken breasts" autocomplete="off"></div>
     <div class="form-row"><label>Category</label>
       <select id="fi-cat">
         <option>🥩 Proteins</option><option>🐟 Seafood</option><option>🥛 Dairy & Eggs</option>
@@ -408,129 +490,114 @@
         <option>🥫 Pantry</option><option>🧂 Seasonings</option><option>💊 Supplements</option>
       </select>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <div class="form-row"><label>On Hand</label><input type="number" id="fi-onhand" placeholder="0" step="0.1"></div>
-      <div class="form-row"><label>Weekly Need</label><input type="number" id="fi-need" placeholder="1" step="0.1"></div>
+    <div class="edit-grid">
+      <div class="form-row" style="margin-bottom:0"><label>On Hand</label><input type="number" id="fi-onhand" placeholder="0" step="0.1"></div>
+      <div class="form-row" style="margin-bottom:0"><label>Need/Week</label><input type="number" id="fi-need" placeholder="1" step="0.1"></div>
     </div>
-    <div class="form-row"><label>Unit (e.g. lbs, cans, oz)</label><input id="fi-unit" placeholder="lbs"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <div class="form-row"><label>Best Price ($)</label><input type="number" id="fi-price" placeholder="0.00" step="0.01"></div>
-      <div class="form-row"><label>Best Price Store</label>
-        <select id="fi-store"><option value="">— select —</option></select>
-      </div>
+    <div class="form-row" style="margin-top:14px"><label>Unit (lbs, cans, oz…)</label><input id="fi-unit" placeholder="lbs" autocomplete="off"></div>
+    <div class="edit-grid">
+      <div class="form-row" style="margin-bottom:0"><label>Best Price ($)</label><input type="number" id="fi-price" placeholder="0.00" step="0.01"></div>
+      <div class="form-row" style="margin-bottom:0"><label>Store</label><select id="fi-store"><option value="">—</option></select></div>
     </div>
-    <div class="form-row"><label>Notes</label><input id="fi-notes" placeholder="optional"></div>
+    <div class="form-row" style="margin-top:14px"><label>Notes</label><input id="fi-notes" placeholder="optional" autocomplete="off"></div>
     <div class="form-actions">
-      <button class="btn btn-ghost" onclick="closeModal('modal-item')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveItem()">Save Item</button>
+      <button class="btn btn-ghost" onclick="closeModal('bg-item','modal-item')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveItem()">Save</button>
     </div>
   </div>
 </div>
 
 <!-- Add Store -->
-<div class="modal-bg" id="modal-store">
-  <div class="modal">
+<div class="modal-bg" id="bg-store" onclick="closeBg('bg-store','modal-store')">
+  <div class="modal" id="modal-store">
+    <div class="modal-handle"></div>
     <div class="modal-title">Add Store</div>
-    <div class="form-row"><label>Store Name</label><input id="fs-name" placeholder="e.g. Smith's, Costco, Walmart"></div>
-    <div class="form-row"><label>Color (for display)</label>
+    <div class="form-row"><label>Store Name</label><input id="fs-name" placeholder="e.g. Smith's, Costco, Walmart" autocomplete="off"></div>
+    <div class="form-row"><label>Color</label>
       <select id="fs-color">
-        <option value="var(--blue)">Blue</option><option value="var(--green)">Green</option>
-        <option value="var(--amber)">Amber</option><option value="var(--purple)">Purple</option>
-        <option value="var(--teal)">Teal</option><option value="var(--red)">Red</option>
+        <option value="#4f8ef7">Blue</option><option value="#3ecf8e">Green</option>
+        <option value="#f5a623">Amber</option><option value="#a78bfa">Purple</option>
+        <option value="#5eead4">Teal</option><option value="#f56565">Red</option>
       </select>
     </div>
-    <div class="form-row"><label>Notes</label><input id="fs-notes" placeholder="e.g. bulk proteins, best produce"></div>
+    <div class="form-row"><label>Notes</label><input id="fs-notes" placeholder="e.g. best for bulk proteins" autocomplete="off"></div>
     <div class="form-actions">
-      <button class="btn btn-ghost" onclick="closeModal('modal-store')">Cancel</button>
+      <button class="btn btn-ghost" onclick="closeModal('bg-store','modal-store')">Cancel</button>
       <button class="btn btn-primary" onclick="saveStore()">Add Store</button>
     </div>
   </div>
 </div>
 
-<!-- Log Price Visit -->
-<div class="modal-bg" id="modal-price">
-  <div class="modal">
-    <div class="modal-title">Log Price at Store</div>
-    <div class="form-row"><label>Store</label>
-      <select id="fp-store"><option value="">— select —</option></select>
+<!-- Log Price -->
+<div class="modal-bg" id="bg-price" onclick="closeBg('bg-price','modal-price')">
+  <div class="modal" id="modal-price">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Log Price</div>
+    <div class="form-row"><label>Store</label><select id="fp-store"><option value="">— select —</option></select></div>
+    <div class="form-row"><label>Item</label><select id="fp-item"><option value="">— select —</option></select></div>
+    <div class="edit-grid">
+      <div class="form-row" style="margin-bottom:0"><label>Price ($)</label><input type="number" id="fp-price" placeholder="0.00" step="0.01"></div>
+      <div class="form-row" style="margin-bottom:0"><label>Date</label><input type="date" id="fp-date"></div>
     </div>
-    <div class="form-row"><label>Item</label>
-      <select id="fp-item"><option value="">— select —</option></select>
-    </div>
-    <div class="form-row"><label>Price ($)</label><input type="number" id="fp-price" placeholder="0.00" step="0.01"></div>
-    <div class="form-row"><label>Date</label><input type="date" id="fp-date"></div>
-    <div class="form-row"><label>Notes</label><input id="fp-notes" placeholder="e.g. on sale, store brand"></div>
+    <div class="form-row" style="margin-top:14px"><label>Notes</label><input id="fp-notes" placeholder="e.g. on sale, store brand" autocomplete="off"></div>
     <div class="form-actions">
-      <button class="btn btn-ghost" onclick="closeModal('modal-price')">Cancel</button>
+      <button class="btn btn-ghost" onclick="closeModal('bg-price','modal-price')">Cancel</button>
       <button class="btn btn-primary" onclick="savePrice()">Log Price</button>
     </div>
   </div>
 </div>
 
-<!-- Settings Modal -->
-<div class="modal-bg" id="modal-settings">
-  <div class="modal" style="max-width:520px">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+<!-- Settings -->
+<div class="modal-bg" id="bg-settings" onclick="closeBg('bg-settings','modal-settings')">
+  <div class="modal" id="modal-settings">
+    <div class="modal-handle"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
       <div class="modal-title" style="margin-bottom:0">⚙ Settings</div>
-      <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-settings')">✕</button>
+      <button class="icon-btn" onclick="closeModal('bg-settings','modal-settings')">✕</button>
     </div>
 
-    <!-- Connection status -->
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;padding:10px 12px;background:var(--card2);border-radius:8px;border:1px solid var(--border)">
-      <span class="status-dot unknown" id="settings-status-dot"></span>
-      <span style="font-size:13px" id="settings-status-text">Not connected to Google Sheets</span>
+    <div class="connection-status">
+      <span class="status-dot unk" id="settings-dot"></span>
+      <span id="settings-status-txt" style="flex:1;font-size:14px">Not connected</span>
     </div>
 
-    <!-- Google Apps Script URL -->
-    <div class="settings-section" style="border-top:none;margin-top:0;padding-top:0">
-      <div class="settings-section-title">Google Apps Script URL</div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:8px;line-height:1.6">
-        Deploy your Apps Script as a Web App, then paste the URL here. 
-        <a href="https://script.google.com" target="_blank" style="color:var(--blue)">Open script.google.com →</a>
+    <div class="settings-block" style="border-top:none;padding-top:0;margin-top:0">
+      <div class="settings-block-title">Apps Script URL</div>
+      <input id="settings-url" type="url" placeholder="https://script.google.com/macros/s/…/exec" style="margin-bottom:8px">
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost btn-sm" style="flex:1;justify-content:center" onclick="testConnection()">Test Connection</button>
       </div>
-      <div class="url-input-wrap">
-        <input type="url" id="settings-script-url" placeholder="https://script.google.com/macros/s/…/exec">
-        <button class="btn btn-ghost btn-sm" onclick="testConnection()">Test</button>
-      </div>
-      <div style="font-size:11px;color:var(--muted);margin-top:6px" id="settings-url-hint"></div>
+      <div style="font-size:13px;color:var(--muted);margin-top:8px" id="settings-hint"></div>
     </div>
 
-    <!-- Setup steps -->
-    <div class="settings-section">
-      <div class="settings-section-title">Setup Steps</div>
-      <div style="font-size:12px;color:var(--muted);line-height:2">
-        <div><span style="color:var(--green);font-weight:700">1.</span> Download <code style="background:var(--card2);padding:1px 5px;border-radius:3px">apps-script.js</code> from the files above</div>
-        <div><span style="color:var(--green);font-weight:700">2.</span> Go to <a href="https://script.google.com" target="_blank" style="color:var(--blue)">script.google.com</a> → New Project → paste the code</div>
-        <div><span style="color:var(--green);font-weight:700">3.</span> Run <code style="background:var(--card2);padding:1px 5px;border-radius:3px">initSheets()</code> once — it creates your Google Sheet automatically</div>
-        <div><span style="color:var(--green);font-weight:700">4.</span> Deploy → New Deployment → Web App<br>
-          <span style="margin-left:14px;color:var(--muted)">Execute as: <strong style="color:var(--text)">Me</strong> &nbsp;·&nbsp; Who has access: <strong style="color:var(--text)">Anyone</strong></span>
-        </div>
-        <div><span style="color:var(--green);font-weight:700">5.</span> Copy the deployment URL → paste above → Save</div>
-      </div>
+    <div class="settings-block">
+      <div class="settings-block-title">Setup Guide</div>
+      <div class="setup-step"><div class="setup-num">1</div><div>Download <code>apps-script.js</code> and go to <a href="https://script.google.com" target="_blank">script.google.com</a> → New Project → paste the code</div></div>
+      <div class="setup-step"><div class="setup-num">2</div><div>Run <code>initSheets()</code> once — creates your Google Sheet automatically</div></div>
+      <div class="setup-step"><div class="setup-num">3</div><div>Deploy → New Deployment → Web App<br><span style="color:var(--muted)">Execute as: <strong style="color:var(--text)">Me</strong> · Access: <strong style="color:var(--text)">Anyone</strong></span></div></div>
+      <div class="setup-step"><div class="setup-num">4</div><div>Copy the <code>/exec</code> URL → paste above → Save</div></div>
     </div>
 
-    <!-- Budget -->
-    <div class="settings-section">
-      <div class="settings-section-title">Weekly Budget</div>
+    <div class="settings-block">
+      <div class="settings-block-title">Weekly Budget</div>
       <div style="display:flex;align-items:center;gap:10px">
-        <span style="font-size:13px;color:var(--muted)">$</span>
-        <input type="number" id="settings-budget" placeholder="200" style="width:100px">
-        <span style="font-size:12px;color:var(--muted)">Recommended: $180–220 for a family of 5</span>
+        <span style="color:var(--muted)">$</span>
+        <input type="number" id="settings-budget" placeholder="200" style="width:100px;flex:none">
+        <span style="font-size:13px;color:var(--muted)">est. $180–220/week</span>
       </div>
     </div>
 
-    <!-- Data management -->
-    <div class="settings-section">
-      <div class="settings-section-title">Data</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-ghost btn-sm" onclick="exportData()">⬇ Export JSON</button>
-        <button class="btn btn-ghost btn-sm" onclick="resetItems()">↺ Reset Items to Defaults</button>
-        <button class="btn btn-danger btn-sm" onclick="clearAllData()">🗑 Clear All Data</button>
+    <div class="settings-block">
+      <div class="settings-block-title">Data</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button class="btn btn-ghost btn-full" onclick="exportData()">⬇ Export JSON Backup</button>
+        <button class="btn btn-ghost btn-full" onclick="resetItems()">↺ Reset Items to Defaults</button>
+        <button class="btn btn-danger btn-full" onclick="clearAllData()">🗑 Clear All Data</button>
       </div>
     </div>
 
-    <div class="form-actions" style="margin-top:16px">
-      <button class="btn btn-ghost" onclick="closeModal('modal-settings')">Cancel</button>
+    <div class="form-actions" style="margin-top:20px">
+      <button class="btn btn-ghost" onclick="closeModal('bg-settings','modal-settings')">Cancel</button>
       <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
     </div>
   </div>
@@ -538,467 +605,446 @@
 
 <script>
 // ════════════════════════════════════════════════════════════════════════════
-// CONFIG — paste your Apps Script URL here after deploying
+// STATE & CONFIG
 // ════════════════════════════════════════════════════════════════════════════
-let SCRIPT_URL = localStorage.getItem("fmp_script_url") || "";
+let SCRIPT_URL = localStorage.getItem('fmp_script_url') || '';
 
-// ── State ────────────────────────────────────────────────────────────────────
 let state = {
-  stores: [],      // [{id, name, color, notes}]
-  items: [],       // [{id, name, cat, onHand, need, unit, bestPrice, bestStore, notes, checked}]
-  prices: [],      // [{id, itemId, storeId, price, date, notes}]
-  budget: 200,
-  mealView: 'david'
+  stores: [], items: [], prices: [],
+  budget: 200, mealView: 'david'
 };
 
-const DINNER_DATA = [
-  { day:"Monday",    emoji:"🌮", name:"Turkey Taco Bowls",
-    desc:"Brown rice, seasoned ground turkey, black beans, salsa, avocado, shredded cheese",
-    davidProt:"~44g", prep:"30 min", wow:"Grains + plant protein",
-    pickyNote:"Plain turkey + rice + cheese",
-    davidTip:"Cook a double batch of turkey — use for Tuesday lunch" },
-  { day:"Tuesday",   emoji:"🐟", name:"Baked Tilapia or Tuna Rice Bowls",
-    desc:"Tilapia baked with lemon, garlic, olive oil (or seared tuna), brown rice, steamed broccoli or green beans",
-    davidProt:"~44g", prep:"30 min", wow:"Fish 1–2×/week for omega-3s",
-    pickyNote:"Very mild — worth a try. Chicken alongside if not",
-    davidTip:"Take fish oil with this meal" },
-  { day:"Wednesday", emoji:"🍲", name:"Lentil & Chicken Soup",
-    desc:"Chicken thighs, red lentils, diced tomatoes, carrots, onion, garlic, cumin — whole grain bread on the side",
-    davidProt:"~40g", prep:"45 min", wow:"Meat sparingly — legume-forward",
-    pickyNote:"Pull out plain chicken before lentils go in. Serve with bread.",
-    davidTip:"Slow cooker option: set it in the morning" },
-  { day:"Thursday",  emoji:"🍗", name:"Sheet Pan Chicken & Veggies",
-    desc:"Chicken thighs, bell peppers, zucchini, cherry tomatoes, olives — roasted in olive oil with Italian herbs",
-    davidProt:"~42g", prep:"35 min", wow:"Wholesome plants + lean poultry",
-    pickyNote:"She picks the plain chicken off the pan — no issue",
-    davidTip:"Easiest cook night — one pan, one oven" },
-  { day:"Friday",    emoji:"🥢", name:"Chicken Stir-Fry + Brown Rice",
-    desc:"Chicken breast strips, snap peas, bell pepper, broccoli, soy sauce/tamari, over brown rice",
-    davidProt:"~45g", prep:"25 min", wow:"Grains + lean meat + vegetables",
-    pickyNote:"Serve her plain rice + plain chicken before sauce goes in",
-    davidTip:"Fastest cook night of the week" },
-  { day:"Saturday",  emoji:"🌶", name:"Homemade Turkey Chili",
-    desc:"Ground turkey, black beans, kidney beans, diced tomatoes, peppers — Greek yogurt dollop instead of sour cream",
-    davidProt:"~42g", prep:"40 min", wow:"Celebration meal — still wholesome",
-    pickyNote:"Plain ground turkey + rice on the side for her",
-    davidTip:"Start slow cooker before your Saturday ride" },
-  { day:"Sunday",    emoji:"🥩", name:"Pork Tenderloin + Sweet Potatoes",
-    desc:"Roasted pork tenderloin, sweet potatoes, steamed broccoli or green beans, olive oil",
-    davidProt:"~40g", prep:"45 min", wow:"Sabbath meal — simple, wholesome",
-    pickyNote:"Plain pork + sweet potato — she'll eat both",
-    davidTip:"Also meal-prep day — cook chicken and grains while this roasts" },
+const DINNERS = [
+  { day:'Mon', emoji:'🌮', name:'Turkey Taco Bowls', desc:'Brown rice, seasoned ground turkey, black beans, salsa, avocado, shredded cheese', davidProt:'~44g', prep:'30 min', wow:'Grains + plant protein', pickyNote:'Plain turkey + rice + cheese', tip:'Double the turkey — use for Tue lunch' },
+  { day:'Tue', emoji:'🐟', name:'Baked Tilapia or Tuna Bowls', desc:'Tilapia baked with lemon, garlic, olive oil (or tuna), brown rice, steamed broccoli or green beans', davidProt:'~44g', prep:'30 min', wow:'Fish for omega-3s', pickyNote:'Very mild — try it. Chicken alongside if not', tip:'Take fish oil with this meal' },
+  { day:'Wed', emoji:'🍲', name:'Lentil & Chicken Soup', desc:'Chicken thighs, red lentils, diced tomatoes, carrots, onion, garlic, cumin — whole grain bread on the side', davidProt:'~40g', prep:'45 min', wow:'Meat sparingly — legume night', pickyNote:'Pull out plain chicken before lentils go in', tip:'Slow cooker: set it in the morning' },
+  { day:'Thu', emoji:'🍗', name:'Sheet Pan Chicken & Veggies', desc:'Chicken thighs, bell peppers, zucchini, cherry tomatoes, olives — roasted with olive oil and Italian herbs', davidProt:'~42g', prep:'35 min', wow:'Wholesome plants + lean poultry', pickyNote:'She picks the plain chicken off the pan', tip:'One pan — easiest cook night' },
+  { day:'Fri', emoji:'🥢', name:'Chicken Stir-Fry + Brown Rice', desc:'Chicken breast strips, snap peas, bell pepper, broccoli, soy sauce/tamari, over brown rice', davidProt:'~45g', prep:'25 min', wow:'Grains + lean meat + veg', pickyNote:'Serve plain rice + chicken before sauce goes in', tip:'Fastest cook night of the week' },
+  { day:'Sat', emoji:'🌶', name:'Homemade Turkey Chili', desc:'Ground turkey, black beans, kidney beans, diced tomatoes, peppers, chili spices — Greek yogurt instead of sour cream', davidProt:'~42g', prep:'40 min', wow:'Celebration — still wholesome', pickyNote:'Plain turkey + rice on the side for her', tip:'Start slow cooker before your Saturday ride' },
+  { day:'Sun', emoji:'🥩', name:'Pork Tenderloin + Sweet Potatoes', desc:'Roasted pork tenderloin, sweet potatoes, steamed broccoli or green beans, olive oil', davidProt:'~40g', prep:'45 min', wow:'Sabbath — simple, wholesome', pickyNote:'Plain pork + sweet potato — she\'ll eat both', tip:'Meal-prep day: cook chicken + grains while this roasts' },
+];
+
+const BREAKFASTS = [
+  { name:'Eggs + Toast', desc:'2–3 scrambled eggs in olive oil, whole grain toast, fruit', prot:'~22g' },
+  { name:'Yogurt Bowl', desc:'Greek yogurt + berries + granola or oats', prot:'~20g' },
+  { name:'Oatmeal + Eggs', desc:'Rolled oats with fruit + 2 boiled eggs on the side', prot:'~24g' },
+  { name:'Smoothie', desc:'Whey + Greek yogurt + frozen fruit + milk (Nutribullet)', prot:'~35g' },
 ];
 
 const DEFAULT_ITEMS = [
-  {cat:"🥩 Proteins",       name:"Chicken breasts (boneless, skinless)", need:4,   unit:"lbs",  notes:"Meal prep + weeknight dinners"},
-  {cat:"🥩 Proteins",       name:"Chicken thighs",                       need:2.5, unit:"lbs",  notes:"Sheet pan Thursday + Wednesday soup"},
-  {cat:"🥩 Proteins",       name:"Ground turkey (93% lean)",             need:2.5, unit:"lbs",  notes:"Monday tacos + Saturday chili"},
-  {cat:"🥩 Proteins",       name:"Pork tenderloin",                      need:1.5, unit:"lbs",  notes:"Sunday dinner"},
-  {cat:"🐟 Seafood",        name:"Tilapia fillets (fresh or frozen)",    need:1.5, unit:"lbs",  notes:"Tuesday dinner — mild white fish"},
-  {cat:"🐟 Seafood",        name:"Canned tuna in water",                 need:5,   unit:"cans", notes:"Lunch wraps, quick protein"},
-  {cat:"🥛 Dairy & Eggs",   name:"Eggs (large)",                         need:3,   unit:"dozen",notes:"Breakfast + batch boil Sunday"},
-  {cat:"🥛 Dairy & Eggs",   name:"Greek yogurt (plain, nonfat)",         need:2,   unit:"tubs", notes:"Breakfast, snacks, replaces sour cream"},
-  {cat:"🥛 Dairy & Eggs",   name:"Cottage cheese (low-fat)",             need:1.5, unit:"lbs",  notes:"David evening snack"},
-  {cat:"🥛 Dairy & Eggs",   name:"Milk (whole or 2%)",                   need:1,   unit:"gal",  notes:"Smoothies, cooking"},
-  {cat:"🥛 Dairy & Eggs",   name:"Shredded cheese",                      need:1,   unit:"bag",  notes:"Monday tacos topping"},
-  {cat:"🌾 Grains",         name:"Brown rice",                           need:1,   unit:"bag",  notes:"Tacos, stir-fry, picky eater staple"},
-  {cat:"🌾 Grains",         name:"Quinoa",                               need:1,   unit:"bag",  notes:"Tuesday fish night"},
-  {cat:"🌾 Grains",         name:"Whole grain bread",                    need:2,   unit:"loaf", notes:"Breakfast toast, soup side"},
-  {cat:"🌾 Grains",         name:"Whole wheat tortillas",                need:1,   unit:"pack", notes:"Wraps, taco bowls"},
-  {cat:"🌾 Grains",         name:"Rolled oats",                          need:1,   unit:"can",  notes:"Breakfast backup"},
-  {cat:"🥦 Vegetables",     name:"Broccoli (fresh or frozen)",           need:2,   unit:"bags", notes:"Tuesday + Sunday"},
-  {cat:"🥦 Vegetables",     name:"Bell peppers (mixed)",                 need:6,   unit:"ea",   notes:"Thursday + Friday"},
-  {cat:"🥦 Vegetables",     name:"Snap peas",                            need:1,   unit:"bag",  notes:"Friday stir-fry"},
-  {cat:"🥦 Vegetables",     name:"Zucchini",                             need:3,   unit:"ea",   notes:"Thursday sheet pan"},
-  {cat:"🥦 Vegetables",     name:"Cherry tomatoes",                      need:1,   unit:"pint", notes:"Thursday sheet pan"},
-  {cat:"🥦 Vegetables",     name:"Carrots",                              need:1,   unit:"bag",  notes:"Wednesday soup"},
-  {cat:"🥦 Vegetables",     name:"Spinach (fresh or frozen)",            need:1,   unit:"bag",  notes:"Wraps, soups"},
-  {cat:"🥦 Vegetables",     name:"Sweet potatoes",                       need:4,   unit:"ea",   notes:"Sunday roast"},
-  {cat:"🥦 Vegetables",     name:"Onions (yellow)",                      need:1,   unit:"bag",  notes:"Cooking base every night"},
-  {cat:"🥦 Vegetables",     name:"Garlic",                               need:2,   unit:"heads",notes:"Fresh is worth it"},
-  {cat:"🥦 Vegetables",     name:"Avocados",                             need:5,   unit:"ea",   notes:"Tacos, wraps, healthy fat"},
-  {cat:"🍎 Fruits",         name:"Bananas",                              need:1,   unit:"bunch",notes:"Breakfast, smoothies"},
-  {cat:"🍎 Fruits",         name:"Apples",                               need:1,   unit:"bag",  notes:"Snacks — almond butter pairing"},
-  {cat:"🍎 Fruits",         name:"Berries (frozen)",                     need:2,   unit:"bags", notes:"Yogurt bowls, smoothies"},
-  {cat:"🫘 Beans & Legumes",name:"Black beans (canned)",                 need:4,   unit:"cans", notes:"Tacos + chili"},
-  {cat:"🫘 Beans & Legumes",name:"Kidney beans (canned)",                need:2,   unit:"cans", notes:"Saturday chili"},
-  {cat:"🫘 Beans & Legumes",name:"Red lentils (dried)",                  need:1,   unit:"bag",  notes:"Wednesday soup"},
-  {cat:"🫘 Beans & Legumes",name:"Chickpeas (canned)",                   need:2,   unit:"cans", notes:"Salads, stew filler"},
-  {cat:"🫒 Fats & Nuts",    name:"Extra virgin olive oil",               need:1,   unit:"btl",  notes:"Primary cooking oil"},
-  {cat:"🫒 Fats & Nuts",    name:"Walnuts",                              need:1,   unit:"bag",  notes:"Snack + omega-3s"},
-  {cat:"🫒 Fats & Nuts",    name:"Almonds",                              need:1,   unit:"bag",  notes:"Snack"},
-  {cat:"🫒 Fats & Nuts",    name:"Almond butter (natural)",              need:1,   unit:"jar",  notes:"Kids snack"},
-  {cat:"🥫 Pantry",         name:"Diced tomatoes (canned)",              need:4,   unit:"cans", notes:"Soup + chili + skillets"},
-  {cat:"🥫 Pantry",         name:"Chicken broth (low sodium)",           need:2,   unit:"carton",notes:"Soups, cooking grains"},
-  {cat:"🥫 Pantry",         name:"Salsa",                                need:1,   unit:"jar",  notes:"Monday tacos"},
-  {cat:"🥫 Pantry",         name:"Soy sauce / tamari (low sodium)",      need:1,   unit:"btl",  notes:"Friday stir-fry"},
-  {cat:"💊 Supplements",    name:"Fish oil (Sports Research Omega-3)",    need:1,   unit:"btl",  notes:"2 softgels daily — monthly buy"},
-  {cat:"💊 Supplements",    name:"Simvastatin 20mg",                      need:1,   unit:"rx",   notes:"As prescribed — monthly"},
+  {cat:'🥩 Proteins',      name:'Chicken breasts (boneless, skinless)', need:4,   unit:'lbs',   notes:'Meal prep + weeknight dinners'},
+  {cat:'🥩 Proteins',      name:'Chicken thighs',                       need:2.5, unit:'lbs',   notes:'Sheet pan Thu + Wed soup'},
+  {cat:'🥩 Proteins',      name:'Ground turkey (93% lean)',             need:2.5, unit:'lbs',   notes:'Mon tacos + Sat chili'},
+  {cat:'🥩 Proteins',      name:'Pork tenderloin',                      need:1.5, unit:'lbs',   notes:'Sunday dinner'},
+  {cat:'🐟 Seafood',       name:'Tilapia fillets (fresh or frozen)',    need:1.5, unit:'lbs',   notes:'Tuesday dinner'},
+  {cat:'🐟 Seafood',       name:'Canned tuna in water',                 need:5,   unit:'cans',  notes:'Lunch wraps, quick protein'},
+  {cat:'🥛 Dairy & Eggs',  name:'Eggs (large)',                         need:3,   unit:'dozen', notes:'Breakfast + batch boil Sunday'},
+  {cat:'🥛 Dairy & Eggs',  name:'Greek yogurt (plain, nonfat)',         need:2,   unit:'tubs',  notes:'Breakfast, snacks, replaces sour cream'},
+  {cat:'🥛 Dairy & Eggs',  name:'Cottage cheese (low-fat)',             need:1.5, unit:'lbs',   notes:'David evening snack'},
+  {cat:'🥛 Dairy & Eggs',  name:'Milk (whole or 2%)',                   need:1,   unit:'gal',   notes:'Smoothies, cooking'},
+  {cat:'🥛 Dairy & Eggs',  name:'Shredded cheese',                      need:1,   unit:'bag',   notes:'Monday tacos topping'},
+  {cat:'🌾 Grains',        name:'Brown rice',                           need:1,   unit:'bag',   notes:'Tacos, stir-fry, picky eater staple'},
+  {cat:'🌾 Grains',        name:'Quinoa',                               need:1,   unit:'bag',   notes:'Tuesday fish night'},
+  {cat:'🌾 Grains',        name:'Whole grain bread',                    need:2,   unit:'loaf',  notes:'Breakfast toast, soup side'},
+  {cat:'🌾 Grains',        name:'Whole wheat tortillas',                need:1,   unit:'pack',  notes:'Wraps, taco bowls'},
+  {cat:'🌾 Grains',        name:'Rolled oats',                          need:1,   unit:'can',   notes:'Breakfast backup'},
+  {cat:'🥦 Vegetables',    name:'Broccoli (fresh or frozen)',           need:2,   unit:'bags',  notes:'Tuesday + Sunday'},
+  {cat:'🥦 Vegetables',    name:'Bell peppers (mixed)',                 need:6,   unit:'ea',    notes:'Thursday + Friday'},
+  {cat:'🥦 Vegetables',    name:'Snap peas',                            need:1,   unit:'bag',   notes:'Friday stir-fry'},
+  {cat:'🥦 Vegetables',    name:'Zucchini',                             need:3,   unit:'ea',    notes:'Thursday sheet pan'},
+  {cat:'🥦 Vegetables',    name:'Cherry tomatoes',                      need:1,   unit:'pint',  notes:'Thursday sheet pan'},
+  {cat:'🥦 Vegetables',    name:'Carrots',                              need:1,   unit:'bag',   notes:'Wednesday soup'},
+  {cat:'🥦 Vegetables',    name:'Spinach (fresh or frozen)',            need:1,   unit:'bag',   notes:'Wraps, soups'},
+  {cat:'🥦 Vegetables',    name:'Sweet potatoes',                       need:4,   unit:'ea',    notes:'Sunday roast'},
+  {cat:'🥦 Vegetables',    name:'Onions (yellow)',                      need:1,   unit:'bag',   notes:'Cooking base every night'},
+  {cat:'🥦 Vegetables',    name:'Garlic',                               need:2,   unit:'heads', notes:'Fresh is worth it'},
+  {cat:'🥦 Vegetables',    name:'Avocados',                             need:5,   unit:'ea',    notes:'Tacos, wraps, healthy fat'},
+  {cat:'🍎 Fruits',        name:'Bananas',                              need:1,   unit:'bunch', notes:'Breakfast, smoothies'},
+  {cat:'🍎 Fruits',        name:'Apples',                               need:1,   unit:'bag',   notes:'Snacks — almond butter pairing'},
+  {cat:'🍎 Fruits',        name:'Berries (frozen)',                     need:2,   unit:'bags',  notes:'Yogurt bowls, smoothies'},
+  {cat:'🫘 Beans & Legumes',name:'Black beans (canned)',                need:4,   unit:'cans',  notes:'Tacos + chili'},
+  {cat:'🫘 Beans & Legumes',name:'Kidney beans (canned)',               need:2,   unit:'cans',  notes:'Saturday chili'},
+  {cat:'🫘 Beans & Legumes',name:'Red lentils (dried)',                 need:1,   unit:'bag',   notes:'Wednesday soup'},
+  {cat:'🫘 Beans & Legumes',name:'Chickpeas (canned)',                  need:2,   unit:'cans',  notes:'Salads, stew filler'},
+  {cat:'🫒 Fats & Nuts',   name:'Extra virgin olive oil',               need:1,   unit:'btl',   notes:'Primary cooking oil'},
+  {cat:'🫒 Fats & Nuts',   name:'Walnuts',                              need:1,   unit:'bag',   notes:'Snack + omega-3s'},
+  {cat:'🫒 Fats & Nuts',   name:'Almonds',                              need:1,   unit:'bag',   notes:'Snack'},
+  {cat:'🫒 Fats & Nuts',   name:'Almond butter (natural)',              need:1,   unit:'jar',   notes:'Kids snack'},
+  {cat:'🥫 Pantry',        name:'Diced tomatoes (canned)',              need:4,   unit:'cans',  notes:'Soup + chili + skillets'},
+  {cat:'🥫 Pantry',        name:'Chicken broth (low sodium)',           need:2,   unit:'carton',notes:'Soups, cooking grains'},
+  {cat:'🥫 Pantry',        name:'Salsa',                                need:1,   unit:'jar',   notes:'Monday tacos'},
+  {cat:'🥫 Pantry',        name:'Soy sauce / tamari',                   need:1,   unit:'btl',   notes:'Friday stir-fry'},
+  {cat:'💊 Supplements',   name:'Fish oil (Sports Research Omega-3)',    need:1,   unit:'btl',   notes:'2 softgels daily — monthly buy'},
+  {cat:'💊 Supplements',   name:'Simvastatin 20mg',                      need:1,   unit:'rx',    notes:'As prescribed — monthly'},
 ];
 
-// ── Persistence ──────────────────────────────────────────────────────────────
-function save() { localStorage.setItem('fmp_state', JSON.stringify(state)); }
+// ── Persistence ───────────────────────────────────────────────────────────────
+function save() { try { localStorage.setItem('fmp_state', JSON.stringify(state)); } catch(e){} }
 function load() {
-  const s = localStorage.getItem('fmp_state');
-  if (s) { try { state = {...state, ...JSON.parse(s)}; } catch(e){} }
-  if (!state.items.length) seedDefaults();
+  try {
+    const s = localStorage.getItem('fmp_state');
+    if (s) state = { ...state, ...JSON.parse(s) };
+  } catch(e) {}
+  if (!state.items || !state.items.length) seedDefaults();
   if (!state.budget) state.budget = 200;
 }
 function seedDefaults() {
   state.items = DEFAULT_ITEMS.map((d,i) => ({
-    id: 'item_'+i, name:d.name, cat:d.cat, onHand:0, need:d.need,
-    unit:d.unit, bestPrice:0, bestStore:'', notes:d.notes, checked:false
+    id:'item_'+i, name:d.name, cat:d.cat, onHand:0,
+    need:d.need, unit:d.unit, bestPrice:0, bestStore:'',
+    notes:d.notes, checked:false
   }));
 }
 
-// ── Tab navigation ───────────────────────────────────────────────────────────
+// ── Tab navigation ────────────────────────────────────────────────────────────
+let currentTab = 'dashboard';
 function showTab(tab) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('panel-'+tab).classList.add('active');
-  event.currentTarget.classList.add('active');
+  document.getElementById('nav-'+tab).classList.add('active');
+  document.getElementById('fab-add').style.display = tab === 'shopping' ? 'flex' : 'none';
+  currentTab = tab;
   if (tab==='dashboard') renderDashboard();
-  if (tab==='mealplan') renderMealPlan();
-  if (tab==='shopping') renderShopping();
-  if (tab==='stores') renderStores();
+  if (tab==='mealplan')  renderMealPlan();
+  if (tab==='shopping')  renderShopping();
+  if (tab==='stores')    renderStores();
+  window.scrollTo(0,0);
 }
 
-// ── Meal plan ────────────────────────────────────────────────────────────────
+// ── Modal helpers ─────────────────────────────────────────────────────────────
+function openModal(bgId, modalId) {
+  document.getElementById(bgId).classList.add('open');
+  requestAnimationFrame(() => document.getElementById(modalId).classList.add('open'));
+}
+function closeModal(bgId, modalId) {
+  document.getElementById(modalId).classList.remove('open');
+  setTimeout(() => document.getElementById(bgId).classList.remove('open'), 300);
+}
+function closeBg(bgId, modalId) { closeModal(bgId, modalId); }
+
+// ── Meal plan render ──────────────────────────────────────────────────────────
 function setMealView(v) {
   state.mealView = v;
   document.getElementById('mp-david-btn').classList.toggle('active', v==='david');
   document.getElementById('mp-family-btn').classList.toggle('active', v==='family');
   document.getElementById('mp-targets').style.display = v==='david' ? 'grid' : 'none';
-  document.getElementById('bfast-prot-hdr').textContent = v==='david' ? 'Protein' : '';
-  document.getElementById('lunch-prot-hdr').textContent = v==='david' ? 'Protein' : '';
-  document.getElementById('prep-david-title').textContent = v==='david' ? 'For David' : 'Dad Does';
-  document.getElementById('prep-weigh-li').style.display = v==='david' ? '' : 'none';
   renderMealPlan();
   save();
 }
+
 function renderMealPlan() {
   const d = state.mealView === 'david';
-  const el = document.getElementById('mp-dinners');
-  el.innerHTML = DINNER_DATA.map(din => `
-    <div class="meal-day">
-      <div class="meal-day-hdr">
-        <span style="font-size:20px">${din.emoji}</span>
-        <span class="meal-day-name">${din.day}</span>
-        <span class="meal-day-title">${din.name}</span>
-        <span class="tag tag-muted" style="margin-left:auto">${din.prep}</span>
+
+  // Breakfasts
+  document.getElementById('mp-breakfasts').innerHTML = BREAKFASTS.map((b,i) => `
+    <div style="padding:12px 14px;${i<BREAKFASTS.length-1?'border-bottom:1px solid var(--border)':''}">
+      <div style="font-size:15px;font-weight:700;margin-bottom:3px">${b.name}</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:6px">${b.desc}</div>
+      ${d ? `<span class="chip chip-purple">${b.prot} protein</span>` : ''}
+    </div>`).join('');
+
+  // Lunches
+  document.getElementById('mp-lunches').innerHTML = [
+    {n:'Chicken + Grain Bowl', d:'Chicken breast, brown rice or quinoa, roasted veg, olive oil', p:'~45g'},
+    {n:'Leftover Dinner', d:'Previous night\'s dinner reheated — zero extra work', p:'~40g'},
+    {n:'Wrap', d:'Chicken, avocado, cheese in whole wheat tortilla — 3 minutes', p:'~40g'},
+  ].map(l => `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--border)">
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:700">${l.n}</div>
+        <div style="font-size:13px;color:var(--muted)">${l.d}</div>
       </div>
-      <div class="meal-day-body">
-        <div>${din.desc}</div>
-        <div class="meal-day-meta">
-          ${d ? `<span class="tag tag-purple">Protein: ${din.davidProt}</span>` : ''}
-          <span class="tag tag-green">WoW: ${din.wow}</span>
-          <span class="tag tag-amber">👧 ${din.pickyNote}</span>
-          ${d ? `<span class="tag tag-blue">💡 ${din.davidTip}</span>` : ''}
+      ${d ? `<span class="chip chip-purple" style="margin-left:8px;white-space:nowrap;flex-shrink:0">${l.p}</span>` : ''}
+    </div>`).join('') + '<div style="height:4px"></div>';
+
+  // Dinners
+  document.getElementById('mp-dinners').innerHTML = DINNERS.map(din => `
+    <div class="meal-card">
+      <div class="meal-card-hdr">
+        <span style="font-size:22px">${din.emoji}</span>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:6px">
+            <span class="meal-day-label">${din.day}</span>
+            <span class="meal-prep-time">${din.prep}</span>
+          </div>
+          <div class="meal-name">${din.name}</div>
+        </div>
+      </div>
+      <div class="meal-card-body">
+        <div class="meal-desc">${din.desc}</div>
+        <div class="meal-tags">
+          <span class="chip chip-green">${din.wow}</span>
+          <span class="chip chip-amber">👧 ${din.pickyNote}</span>
+          ${d ? `<span class="chip chip-purple">${din.davidProt}</span>` : ''}
+          ${d ? `<span class="chip chip-blue">💡 ${din.tip}</span>` : ''}
         </div>
       </div>
     </div>`).join('');
+
+  // Prep checklist
+  const davidPrep = [
+    'Boil 6–8 eggs → snacks & breakfasts all week',
+    'Cook 3–4 lbs chicken → lunch containers Mon–Fri',
+    'Cook large pot of brown rice or quinoa',
+    'Portion Greek yogurt into grab-and-go containers',
+    d ? 'Log starting weight for the week' : null,
+  ].filter(Boolean);
+  const familyPrep = [
+    'Chop onions, bell peppers, garlic → store in containers',
+    'Start slow cooker if using Wed soup or Sat chili',
+    'Post dinner list on the fridge',
+    'Wash and dry salad greens',
+  ];
+  document.getElementById('mp-prep').innerHTML = `
+    <div style="font-weight:700;margin-bottom:8px;font-size:14px">${d?'For David':'Dad Does'}</div>
+    ${davidPrep.map(t=>`<div style="display:flex;gap:10px;padding:5px 0;font-size:14px;color:var(--muted)"><span style="color:var(--green);font-size:12px;margin-top:3px">●</span>${t}</div>`).join('')}
+    <div style="font-weight:700;margin:12px 0 8px;font-size:14px">For the Family</div>
+    ${familyPrep.map(t=>`<div style="display:flex;gap:10px;padding:5px 0;font-size:14px;color:var(--muted)"><span style="color:var(--muted);font-size:12px;margin-top:3px">●</span>${t}</div>`).join('')}`;
 }
 
-// ── Shopping list ────────────────────────────────────────────────────────────
+// ── Shopping render ───────────────────────────────────────────────────────────
 function renderShopping() {
   const filter = document.getElementById('store-filter').value;
   const cats = [...new Set(state.items.map(i=>i.cat))];
-  let needed = 0, total = 0, checked = 0;
+  let needed=0, total=0, checked=0;
+
   const html = cats.map(cat => {
-    const items = state.items.filter(i=>i.cat===cat && (!filter || i.bestStore===filter));
+    const items = state.items.filter(i => i.cat===cat && (!filter || i.bestStore===filter));
     if (!items.length) return '';
-    const rows = items.map(item => {
+
+    let catTotal = 0;
+    const itemsHtml = items.map(item => {
       const toBuy = Math.max(0, item.need - item.onHand);
       const cost = toBuy * (item.bestPrice||0);
+      catTotal += cost;
       if (toBuy > 0) needed++;
       total += cost;
       if (item.checked) checked++;
-      const storeOpts = state.stores.map(s =>
-        `<option value="${s.id}" ${item.bestStore===s.id?'selected':''}>${s.name}</option>`).join('');
-      const bestName = state.stores.find(s=>s.id===item.bestStore)?.name || '—';
+
+      const store = state.stores.find(s=>s.id===item.bestStore);
       const pHist = state.prices.filter(p=>p.itemId===item.id);
-      const hasPrices = pHist.length > 0;
-      const minP = hasPrices ? Math.min(...pHist.map(p=>p.price)) : null;
-      const bestStoreName = hasPrices ? state.stores.find(s=>s.id===pHist.find(p=>p.price===minP)?.storeId)?.name||'?' : null;
-      return `<tr class="${item.checked?'opacity-50':''}">
-        <td><input type="checkbox" ${item.checked?'checked':''} onchange="toggleCheck('${item.id}',this.checked)" style="margin-right:6px">
-          <strong>${item.name}</strong>
-          ${item.notes?`<div style="font-size:11px;color:var(--muted)">${item.notes}</div>`:''}
-        </td>
-        <td>
-          <input class="inline-input" type="number" value="${item.onHand}" step="0.1"
-            onchange="updateField('${item.id}','onHand',+this.value)"
-            title="On hand"> <span style="font-size:11px;color:var(--muted)">${item.unit}</span>
-        </td>
-        <td>
-          <input class="inline-input" type="number" value="${item.need}" step="0.1"
-            onchange="updateField('${item.id}','need',+this.value)">
-          <span style="font-size:11px;color:var(--muted)">${item.unit}</span>
-        </td>
-        <td><span class="cost-val ${toBuy>0?'':'tag tag-green'}" style="${toBuy>0?'color:var(--amber)':''}">${toBuy > 0 ? toBuy+' '+item.unit : '✓ stocked'}</span></td>
-        <td>
-          <input class="inline-input" type="number" value="${item.bestPrice||''}" step="0.01" placeholder="$0.00"
-            onchange="updateField('${item.id}','bestPrice',+this.value)" style="width:80px">
-        </td>
-        <td class="store-col">
-          <select onchange="updateField('${item.id}','bestStore',this.value)">
-            <option value="">—</option>${storeOpts}
-          </select>
-        </td>
-        <td><span class="cost-val" style="color:var(--green)">${cost>0?'$'+cost.toFixed(2):'—'}</span></td>
-        <td>
-          ${hasPrices?`<span class="tag tag-blue" title="Best: $${minP?.toFixed(2)} @ ${bestStoreName}">$${minP?.toFixed(2)} @ ${bestStoreName}</span>`:'<span style="color:var(--muted);font-size:11px">no history</span>'}
-          <button class="btn btn-ghost btn-sm" onclick="quickLogPrice('${item.id}')" title="Log price" style="margin-left:4px">+$</button>
-        </td>
-        <td><button class="btn btn-danger btn-sm" onclick="deleteItem('${item.id}')">✕</button></td>
-      </tr>`;
-    }).join('');
-    const catTotal = items.reduce((s,i)=>{
-      const tb=Math.max(0,i.need-i.onHand); return s+(tb*(i.bestPrice||0));},0);
-    return `<div class="cat-section">
-      <div class="cat-hdr" onclick="toggleCat(this)">
-        <span class="cat-hdr-label">${cat}</span>
-        <span class="tag tag-muted">${items.length} items</span>
-        <span class="cost-val" style="color:var(--green);font-size:12px">${catTotal>0?'$'+catTotal.toFixed(2):''}</span>
-        <span style="color:var(--muted);font-size:14px;margin-left:6px">▼</span>
-      </div>
-      <div class="cat-body">
-        <div class="tbl-wrap" style="border:none;border-radius:0">
-          <table>
-            <thead><tr>
-              <th>Item</th><th>On Hand</th><th>Need/Week</th>
-              <th>To Buy</th><th>Unit Price</th><th>Store</th>
-              <th>Est. Cost</th><th>Best Price</th><th></th>
-            </tr></thead>
-            <tbody>${rows}</tbody>
-          </table>
+      const minP = pHist.length ? Math.min(...pHist.map(p=>p.price)) : null;
+      const bestStore = minP!=null ? state.stores.find(s=>s.id===pHist.find(p=>p.price===minP)?.storeId) : null;
+
+      return `
+        <div class="shop-item" id="sitem-${item.id}">
+          <div class="shop-check ${item.checked?'checked':''}" onclick="toggleCheck('${item.id}')">
+            ${item.checked?'✓':''}
+          </div>
+          <div class="shop-item-main" onclick="toggleItemEdit('${item.id}')">
+            <div class="shop-item-name ${item.checked?'checked-text':''}">${item.name}</div>
+            <div class="shop-item-meta">
+              ${item.onHand} on hand · need ${item.need} ${item.unit}
+              ${store ? `· <span style="color:${store.color}">${store.name}</span>` : ''}
+              ${minP!=null ? `· best $${minP.toFixed(2)}${bestStore?' @ '+bestStore.name:''}` : ''}
+            </div>
+          </div>
+          <div class="shop-item-right">
+            ${cost > 0 ? `<div class="shop-item-cost">$${cost.toFixed(2)}</div>` : ''}
+            ${toBuy > 0
+              ? `<div class="shop-item-tobuy">Buy ${toBuy} ${item.unit}</div>`
+              : `<div class="shop-item-stocked">✓ stocked</div>`}
+            <button onclick="quickLogPrice('${item.id}')" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;padding:2px">+$</button>
+          </div>
         </div>
-      </div>
-    </div>`;
+        <div class="item-edit-panel" id="edit-${item.id}">
+          <div class="edit-label" style="margin-bottom:8px">${item.name}</div>
+          <div class="edit-grid">
+            <div><div class="edit-label">On Hand</div>
+              <input class="input-sm" type="number" value="${item.onHand}" step="0.1"
+                onchange="updateField('${item.id}','onHand',+this.value)" style="width:100%">
+            </div>
+            <div><div class="edit-label">Need / Week</div>
+              <input class="input-sm" type="number" value="${item.need}" step="0.1"
+                onchange="updateField('${item.id}','need',+this.value)" style="width:100%">
+            </div>
+            <div><div class="edit-label">Unit Price ($)</div>
+              <input class="input-sm" type="number" value="${item.bestPrice||''}" step="0.01" placeholder="$0.00"
+                onchange="updateField('${item.id}','bestPrice',+this.value)" style="width:100%">
+            </div>
+            <div><div class="edit-label">Store</div>
+              <select class="input-sm" onchange="updateField('${item.id}','bestStore',this.value)" style="width:100%">
+                <option value="">—</option>
+                ${state.stores.map(s=>`<option value="${s.id}" ${item.bestStore===s.id?'selected':''}>${s.name}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:4px">
+            <button class="btn btn-ghost btn-sm" onclick="editItemFull('${item.id}')">Edit Details</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteItem('${item.id}')">Remove</button>
+          </div>
+        </div>`;
+    }).join('');
+
+    const lowCount = items.filter(i=>Math.max(0,i.need-i.onHand)>0).length;
+    return `
+      <div class="cat-accordion">
+        <div class="cat-accordion-hdr" onclick="toggleCat(this,'catbody-${cat.replace(/\s/g,'_')}')">
+          <span class="cat-accordion-icon">${cat.split(' ')[0]}</span>
+          <span class="cat-accordion-name">${cat.replace(/^\S+\s/,'')}</span>
+          <div class="cat-accordion-meta">
+            ${lowCount ? `<span class="chip chip-amber" style="font-size:11px">${lowCount} needed</span>` : ''}
+            ${catTotal>0 ? `<span class="chip chip-green" style="font-size:11px">$${catTotal.toFixed(2)}</span>` : ''}
+          </div>
+          <span class="cat-chevron open">▼</span>
+        </div>
+        <div class="cat-accordion-body open" id="catbody-${cat.replace(/\s/g,'_')}" style="display:block">
+          ${itemsHtml}
+        </div>
+      </div>`;
   }).join('');
-  document.getElementById('shopping-list').innerHTML = html || '<div class="empty">No items yet</div>';
+
+  document.getElementById('shopping-list').innerHTML = html || '<div class="empty-state"><div class="empty-icon">🛒</div>No items yet</div>';
   document.getElementById('sh-needed').textContent = needed;
   document.getElementById('sh-total').textContent = '$'+total.toFixed(2);
   document.getElementById('sh-checked').textContent = checked;
 }
-function toggleCat(hdr) {
-  const body = hdr.nextElementSibling;
-  const arr = hdr.querySelector('span:last-child');
-  body.classList.toggle('collapsed');
-  arr.textContent = body.classList.contains('collapsed') ? '▶' : '▼';
+
+function toggleCat(hdr, bodyId) {
+  const body = document.getElementById(bodyId);
+  const chev = hdr.querySelector('.cat-chevron');
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  chev.classList.toggle('open', !open);
 }
-function toggleCheck(id, val) {
+
+let openEditId = null;
+function toggleItemEdit(id) {
+  const panel = document.getElementById('edit-'+id);
+  if (!panel) return;
+  if (openEditId && openEditId !== id) {
+    const prev = document.getElementById('edit-'+openEditId);
+    if (prev) prev.classList.remove('open');
+  }
+  panel.classList.toggle('open');
+  openEditId = panel.classList.contains('open') ? id : null;
+}
+function toggleCheck(id) {
   const item = state.items.find(i=>i.id===id);
-  if (item) { item.checked=val; save(); renderShopping(); }
+  if (!item) return;
+  item.checked = !item.checked;
+  save();
+  // Update just this item's check element without full re-render
+  const chk = document.querySelector(`#sitem-${id} .shop-check`);
+  const nm  = document.querySelector(`#sitem-${id} .shop-item-name`);
+  if (chk) { chk.classList.toggle('checked', item.checked); chk.textContent = item.checked ? '✓' : ''; }
+  if (nm)  nm.classList.toggle('checked-text', item.checked);
+  // Update counters
+  const checked = state.items.filter(i=>i.checked).length;
+  document.getElementById('sh-checked').textContent = checked;
 }
 function updateField(id, field, val) {
   const item = state.items.find(i=>i.id===id);
   if (item) { item[field]=val; save(); renderDashboardStats(); }
+}
+function clearChecked() {
+  state.items.forEach(i=>i.checked=false);
+  save(); renderShopping();
 }
 function deleteItem(id) {
   if (!confirm('Remove this item?')) return;
   state.items = state.items.filter(i=>i.id!==id);
   save(); renderShopping();
 }
-function checkAll() {
-  state.items.forEach(i=>{ if(Math.max(0,i.need-i.onHand)>0) i.checked=true; });
-  save(); renderShopping();
-}
-function clearChecked() {
-  state.items.forEach(i=>i.checked=false);
-  save(); renderShopping();
-}
-
-// ── Stores ───────────────────────────────────────────────────────────────────
-function renderStores() {
-  const el = document.getElementById('stores-grid');
-  if (!state.stores.length) { el.innerHTML = '<div class="empty">No stores added yet</div>'; }
-  else {
-    el.innerHTML = state.stores.map(s => {
-      const storePrices = state.prices.filter(p=>p.storeId===s.id);
-      const storeItems = [...new Set(storePrices.map(p=>p.itemId))].length;
-      const estTotal = state.items.reduce((sum,item)=>{
-        if (item.bestStore===s.id) { const tb=Math.max(0,item.need-item.onHand); return sum+tb*(item.bestPrice||0); }
-        return sum;
-      },0);
-      return `<div class="card">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-          <div style="width:10px;height:10px;border-radius:50%;background:${s.color}"></div>
-          <strong style="font-size:14px">${s.name}</strong>
-          <button class="btn btn-danger btn-sm" style="margin-left:auto" onclick="deleteStore('${s.id}')">✕</button>
-        </div>
-        <div style="font-size:12px;color:var(--muted);margin-bottom:6px">${s.notes||'No notes'}</div>
-        <div style="display:flex;gap:12px;font-size:12px">
-          <span><strong>${storeItems}</strong> items tracked</span>
-          <span style="color:var(--green)"><strong>$${estTotal.toFixed(2)}</strong> est. this week</span>
-        </div>
-      </div>`;
-    }).join('');
-  }
-
-  // Price history
-  const tbody = document.getElementById('price-history-body');
-  if (!state.prices.length) {
-    tbody.innerHTML = '<tr><td colspan="6" class="empty">No price logs yet</td></tr>';
-  } else {
-    const sorted = [...state.prices].sort((a,b)=>b.date.localeCompare(a.date));
-    tbody.innerHTML = sorted.map(p => {
-      const item = state.items.find(i=>i.id===p.itemId);
-      const store = state.stores.find(s=>s.id===p.storeId);
-      return `<tr>
-        <td>${item?.name||'—'}</td>
-        <td><span class="store-badge"><span style="width:8px;height:8px;border-radius:50%;background:${store?.color||'#888'};display:inline-block"></span>${store?.name||'—'}</span></td>
-        <td class="cost-val" style="color:var(--green)">$${(+p.price).toFixed(2)}</td>
-        <td style="color:var(--muted)">${p.date}</td>
-        <td style="color:var(--muted)">${p.notes||'—'}</td>
-        <td><button class="btn btn-danger btn-sm" onclick="deletePrice('${p.id}')">✕</button></td>
-      </tr>`;
-    }).join('');
-  }
-}
-function deleteStore(id) {
-  if (!confirm('Remove this store?')) return;
-  state.stores = state.stores.filter(s=>s.id!==id);
-  state.items.forEach(i=>{ if(i.bestStore===id) i.bestStore=''; });
-  save(); renderStores(); refreshStoreSelects();
-}
-function deletePrice(id) {
-  state.prices = state.prices.filter(p=>p.id!==id);
-  save(); renderStores();
-}
-
-// ── Dashboard ────────────────────────────────────────────────────────────────
-function renderDashboard() { renderDashboardStats(); }
-function renderDashboardStats() {
-  // Totals
-  const total = state.items.reduce((s,i)=>{
-    const tb=Math.max(0,i.need-i.onHand); return s+tb*(i.bestPrice||0);},0);
-  document.getElementById('d-total-cost').textContent = '$'+total.toFixed(2);
-  const budget = state.budget||200;
-  document.getElementById('budget-input').value = budget;
-  const pct = Math.min(100, total/budget*100);
-  document.getElementById('d-budget-bar').style.width = pct+'%';
-  document.getElementById('d-budget-bar').style.background = pct>90?'var(--red)':pct>70?'var(--amber)':'var(--green)';
-  document.getElementById('d-budget-lbl').textContent = `Budget: $${budget} | Used: ${pct.toFixed(0)}%`;
-
-  // Low stock
-  const low = state.items.filter(i=>i.onHand < i.need*0.25 && i.need>0);
-  document.getElementById('d-low-count').textContent = low.length;
-  document.getElementById('d-items-needed').textContent = state.items.filter(i=>Math.max(0,i.need-i.onHand)>0).length;
-  document.getElementById('d-stores-count').textContent = state.stores.length;
-
-  // Low list
-  const lowEl = document.getElementById('d-low-list');
-  lowEl.innerHTML = low.length ? low.map(i=>`
-    <div class="alert-row">
-      <span class="alert-icon">⚠</span>
-      <span style="flex:1"><strong>${i.name}</strong> — ${i.onHand} ${i.unit} on hand, need ${i.need}</span>
-      <span class="tag tag-amber">Need ${Math.max(0,i.need-i.onHand)} ${i.unit}</span>
-    </div>`).join('') : '<div class="empty">All stocked up ✓</div>';
-
-  // Cost by store
-  const storeEl = document.getElementById('d-store-costs');
-  if (!state.stores.length) { storeEl.innerHTML = '<div class="empty">Add stores first</div>'; }
-  else {
-    const storeCosts = state.stores.map(s => {
-      const cost = state.items.reduce((sum,item)=>{
-        if(item.bestStore===s.id){ const tb=Math.max(0,item.need-item.onHand); return sum+tb*(item.bestPrice||0); }
-        return sum;
-      },0);
-      const count = state.items.filter(i=>i.bestStore===s.id).length;
-      return {s, cost, count};
-    }).sort((a,b)=>b.cost-a.cost);
-    storeEl.innerHTML = storeCosts.map(({s,cost,count})=>`
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-        <div style="width:10px;height:10px;border-radius:50%;background:${s.color};flex-shrink:0"></div>
-        <span style="flex:1;font-size:13px">${s.name}</span>
-        <span style="font-size:11px;color:var(--muted)">${count} items</span>
-        <span class="cost-val" style="color:var(--green)">$${cost.toFixed(2)}</span>
-      </div>
-      <div class="pbar-wrap" style="margin-bottom:8px">
-        <div class="pbar" style="background:${s.color};width:${total>0?Math.min(100,cost/total*100):0}%"></div>
-      </div>`).join('');
-  }
-
-  // Best prices
-  const bpTbody = document.getElementById('d-best-prices');
-  const itemsWithPrices = state.prices.length ? (() => {
-    const byItem = {};
-    state.prices.forEach(p=>{
-      if(!byItem[p.itemId]||p.price<byItem[p.itemId].price) byItem[p.itemId]={...p};
-    });
-    return Object.values(byItem).map(p=>{
-      const item=state.items.find(i=>i.id===p.itemId);
-      const store=state.stores.find(s=>s.id===p.storeId);
-      const allP=state.prices.filter(x=>x.itemId===p.itemId);
-      const avg=allP.reduce((s,x)=>s+x.price,0)/allP.length;
-      const savings=avg-p.price;
-      return {item,store,p,savings,avg};
-    }).filter(x=>x.item&&x.store);
-  })() : [];
-  bpTbody.innerHTML = itemsWithPrices.length ? itemsWithPrices.map(({item,store,p,savings})=>`
-    <tr class="best-price">
-      <td>${item.name}</td>
-      <td class="cost-val" style="color:var(--green)">$${(+p.price).toFixed(2)}</td>
-      <td><span class="store-badge"><span style="width:8px;height:8px;border-radius:50%;background:${store.color};display:inline-block"></span>${store.name}</span></td>
-      <td>${savings>0?`<span class="tag tag-green">-$${savings.toFixed(2)}</span>`:'<span class="tag tag-muted">cheapest</span>'}</td>
-    </tr>`).join('') : '<tr><td colspan="4" class="empty">No price history yet</td></tr>';
-
-  // Stock levels
-  const stockEl = document.getElementById('d-stock-levels');
-  const needItems = state.items.filter(i=>i.need>0).slice(0,12);
-  stockEl.innerHTML = needItems.map(i=>{
-    const pct = Math.min(100, i.onHand/i.need*100);
-    const color = pct>=80?'var(--green)':pct>=40?'var(--amber)':'var(--red)';
-    return `<div style="margin-bottom:8px">
-      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">
-        <span>${i.name}</span><span style="color:${color};font-family:var(--mono)">${i.onHand}/${i.need} ${i.unit}</span>
-      </div>
-      <div class="pbar-wrap"><div class="pbar" style="background:${color};width:${pct}%"></div></div>
-    </div>`;
-  }).join('');
-}
-function saveBudget() {
-  state.budget = +document.getElementById('budget-input').value||200;
-  save(); renderDashboardStats();
-}
-
-// ── Modal helpers ─────────────────────────────────────────────────────────────
-function openModal(id) { document.getElementById(id).classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-
 let editItemId = null;
 function openAddItem() {
   editItemId = null;
   document.getElementById('modal-item-title').textContent = 'Add Item';
   ['fi-name','fi-unit','fi-notes'].forEach(id=>document.getElementById(id).value='');
   ['fi-onhand','fi-need','fi-price'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('fi-cat').value = '🥩 Proteins';
   refreshStoreSelects();
-  openModal('modal-item');
+  openModal('bg-item','modal-item');
+}
+function editItemFull(id) {
+  const item = state.items.find(i=>i.id===id);
+  if (!item) return;
+  editItemId = id;
+  document.getElementById('modal-item-title').textContent = 'Edit Item';
+  document.getElementById('fi-name').value = item.name;
+  document.getElementById('fi-cat').value = item.cat;
+  document.getElementById('fi-onhand').value = item.onHand;
+  document.getElementById('fi-need').value = item.need;
+  document.getElementById('fi-unit').value = item.unit;
+  document.getElementById('fi-price').value = item.bestPrice||'';
+  document.getElementById('fi-notes').value = item.notes||'';
+  refreshStoreSelects();
+  document.getElementById('fi-store').value = item.bestStore||'';
+  openModal('bg-item','modal-item');
 }
 function saveItem() {
   const name = document.getElementById('fi-name').value.trim();
   if (!name) return;
   const item = {
-    id: editItemId || 'item_'+Date.now(),
-    name, cat: document.getElementById('fi-cat').value,
-    onHand: +document.getElementById('fi-onhand').value||0,
-    need: +document.getElementById('fi-need').value||0,
-    unit: document.getElementById('fi-unit').value.trim(),
-    bestPrice: +document.getElementById('fi-price').value||0,
+    id: editItemId || 'item_'+Date.now(), name,
+    cat:       document.getElementById('fi-cat').value,
+    onHand:   +document.getElementById('fi-onhand').value||0,
+    need:     +document.getElementById('fi-need').value||0,
+    unit:      document.getElementById('fi-unit').value.trim(),
+    bestPrice:+document.getElementById('fi-price').value||0,
     bestStore: document.getElementById('fi-store').value,
-    notes: document.getElementById('fi-notes').value.trim(),
+    notes:     document.getElementById('fi-notes').value.trim(),
     checked: false
   };
-  if (editItemId) { const i=state.items.findIndex(x=>x.id===editItemId); if(i>=0) state.items[i]=item; }
-  else state.items.push(item);
-  save(); closeModal('modal-item'); renderShopping(); renderDashboardStats();
+  if (editItemId) {
+    const i = state.items.findIndex(x=>x.id===editItemId);
+    if (i>=0) state.items[i]=item;
+  } else { state.items.push(item); }
+  save(); closeModal('bg-item','modal-item'); renderShopping(); renderDashboardStats();
+}
+
+// ── Stores render ─────────────────────────────────────────────────────────────
+function renderStores() {
+  const listEl = document.getElementById('stores-list');
+  if (!state.stores.length) {
+    listEl.innerHTML = '<div class="empty-state"><div class="empty-icon">🏪</div>No stores yet — add one above</div>';
+  } else {
+    listEl.innerHTML = state.stores.map(s => {
+      const priceCount = [...new Set(state.prices.filter(p=>p.storeId===s.id).map(p=>p.itemId))].length;
+      const estCost = state.items.reduce((sum,item) => {
+        if (item.bestStore===s.id) return sum + Math.max(0,item.need-item.onHand)*(item.bestPrice||0);
+        return sum;
+      }, 0);
+      return `<div class="store-card">
+        <div class="store-card-hdr">
+          <div class="store-dot" style="background:${s.color}"></div>
+          <div class="store-name">${s.name}</div>
+          <button class="btn btn-danger btn-sm" onclick="deleteStore('${s.id}')">✕</button>
+        </div>
+        ${s.notes ? `<div style="font-size:13px;color:var(--muted);margin-bottom:8px">${s.notes}</div>` : ''}
+        <div style="display:flex;gap:16px;font-size:14px">
+          <span><span style="font-weight:700">${priceCount}</span> <span class="text-muted">items tracked</span></span>
+          ${estCost>0 ? `<span class="text-green" style="font-weight:700">$${estCost.toFixed(2)} est. this week</span>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // Price history
+  const histEl = document.getElementById('price-history');
+  if (!state.prices.length) {
+    histEl.innerHTML = '<div class="empty-state" style="padding:20px 0"><div class="text-muted">No prices logged yet</div></div>';
+  } else {
+    const sorted = [...state.prices].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,50);
+    histEl.innerHTML = sorted.map(p => {
+      const item  = state.items.find(i=>i.id===p.itemId);
+      const store = state.stores.find(s=>s.id===p.storeId);
+      return `<div class="price-row">
+        <div class="price-store-dot" style="background:${store?.color||'#888'}"></div>
+        <div class="price-item-name">${item?.name||'Unknown'}</div>
+        <div style="text-align:right">
+          <div class="price-val">$${(+p.price).toFixed(2)}</div>
+          <div class="price-date">${store?.name||'?'} · ${p.date}</div>
+        </div>
+        <button onclick="deletePrice('${p.id}')" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;font-size:16px">✕</button>
+      </div>`;
+    }).join('');
+  }
 }
 function openAddStore() {
   document.getElementById('fs-name').value='';
   document.getElementById('fs-notes').value='';
-  openModal('modal-store');
+  openModal('bg-store','modal-store');
 }
 function saveStore() {
   const name = document.getElementById('fs-name').value.trim();
@@ -1006,15 +1052,25 @@ function saveStore() {
   state.stores.push({ id:'store_'+Date.now(), name,
     color: document.getElementById('fs-color').value,
     notes: document.getElementById('fs-notes').value.trim() });
-  save(); closeModal('modal-store'); refreshStoreSelects();
-  renderDashboard(); renderShopping(); renderStores();
+  save(); closeModal('bg-store','modal-store');
+  refreshStoreSelects(); renderDashboard(); renderShopping(); renderStores();
+}
+function deleteStore(id) {
+  if (!confirm('Remove this store?')) return;
+  state.stores = state.stores.filter(s=>s.id!==id);
+  state.items.forEach(i=>{ if(i.bestStore===id) i.bestStore=''; });
+  save(); renderStores(); renderShopping(); refreshStoreSelects();
+}
+function deletePrice(id) {
+  state.prices = state.prices.filter(p=>p.id!==id);
+  save(); renderStores();
 }
 function openLogPrice() {
   refreshStoreSelects();
   document.getElementById('fp-date').value = new Date().toISOString().slice(0,10);
   document.getElementById('fp-price').value='';
   document.getElementById('fp-notes').value='';
-  openModal('modal-price');
+  openModal('bg-price','modal-price');
 }
 function quickLogPrice(itemId) {
   refreshStoreSelects();
@@ -1022,150 +1078,269 @@ function quickLogPrice(itemId) {
   document.getElementById('fp-date').value = new Date().toISOString().slice(0,10);
   document.getElementById('fp-price').value='';
   document.getElementById('fp-notes').value='';
-  openModal('modal-price');
+  openModal('bg-price','modal-price');
 }
 function savePrice() {
   const storeId = document.getElementById('fp-store').value;
   const itemId  = document.getElementById('fp-item').value;
   const price   = +document.getElementById('fp-price').value;
-  if (!storeId||!itemId||!price) return;
+  if (!storeId||!itemId||!price) { alert('Fill in store, item, and price'); return; }
   state.prices.push({ id:'price_'+Date.now(), storeId, itemId, price,
-    date: document.getElementById('fp-date').value,
+    date:  document.getElementById('fp-date').value,
     notes: document.getElementById('fp-notes').value.trim() });
-  // Auto-update best price on item
   const item = state.items.find(i=>i.id===itemId);
-  if (item && (!item.bestPrice || price < item.bestPrice)) {
-    item.bestPrice=price; item.bestStore=storeId;
-  }
-  save(); closeModal('modal-price'); renderStores(); renderDashboardStats(); renderShopping();
+  if (item && (!item.bestPrice || price < item.bestPrice)) { item.bestPrice=price; item.bestStore=storeId; }
+  save(); closeModal('bg-price','modal-price'); renderStores(); renderDashboardStats(); renderShopping();
 }
 function refreshStoreSelects() {
   const opts = state.stores.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
   const itemOpts = state.items.map(i=>`<option value="${i.id}">${i.name}</option>`).join('');
-  ['fi-store','fp-store'].forEach(id=>{
-    const el=document.getElementById(id);
-    if(el){ el.innerHTML=(id==='fi-store'?'<option value="">—</option>':'')+opts; }
-  });
-  document.getElementById('fp-item').innerHTML = '<option value="">— select item —</option>'+itemOpts;
-  // Store filter
-  const sf=document.getElementById('store-filter');
-  sf.innerHTML='<option value="">All stores</option>'+opts;
+  const sf = document.getElementById('fi-store');
+  if (sf) sf.innerHTML = '<option value="">—</option>'+opts;
+  const fps = document.getElementById('fp-store');
+  if (fps) fps.innerHTML = '<option value="">— select —</option>'+opts;
+  const fpi = document.getElementById('fp-item');
+  if (fpi) fpi.innerHTML = '<option value="">— select —</option>'+itemOpts;
+  const stf = document.getElementById('store-filter');
+  if (stf) stf.innerHTML = '<option value="">All stores</option>'+opts;
 }
 
-// ── Sync with Google Sheets ───────────────────────────────────────────────────
-async function syncAll() {
-  if (!SCRIPT_URL) {
-    openSettings();
-    return;
+// ── Dashboard render ──────────────────────────────────────────────────────────
+function renderDashboard() { renderDashboardStats(); }
+function renderDashboardStats() {
+  const total = state.items.reduce((s,i)=>{ const tb=Math.max(0,i.need-i.onHand); return s+tb*(i.bestPrice||0); },0);
+  document.getElementById('d-total-cost').textContent = '$'+total.toFixed(0);
+  const budget = state.budget||200;
+  const pct = Math.min(100,total/budget*100);
+  document.getElementById('d-budget-bar').style.width = pct+'%';
+  document.getElementById('d-budget-bar').style.background = pct>90?'var(--red)':pct>70?'var(--amber)':'var(--green)';
+  document.getElementById('d-budget-lbl').textContent = `vs $${budget} budget · ${pct.toFixed(0)}% used`;
+  const low = state.items.filter(i=>i.need>0 && i.onHand<i.need*0.25);
+  document.getElementById('d-low-count').textContent = low.length;
+  document.getElementById('d-items-needed').textContent = state.items.filter(i=>Math.max(0,i.need-i.onHand)>0).length;
+  document.getElementById('d-stores-count').textContent = state.stores.length;
+
+  const lowEl = document.getElementById('d-low-list');
+  lowEl.innerHTML = low.length ? low.map(i=>`
+    <div class="alert-item">
+      <span style="font-size:18px">⚠</span>
+      <div style="flex:1">
+        <strong>${i.name}</strong>
+        <div style="font-size:13px;color:var(--muted)">${i.onHand} on hand · need ${i.need} ${i.unit}</div>
+      </div>
+      <span class="chip chip-amber">Buy ${Math.max(0,i.need-i.onHand)} ${i.unit}</span>
+    </div>`).join('') : '<div class="text-muted" style="font-size:14px">All stocked up ✓</div>';
+
+  const storeEl = document.getElementById('d-store-costs');
+  if (!state.stores.length) { storeEl.innerHTML = '<div class="text-muted" style="font-size:14px">Add stores first</div>'; }
+  else {
+    const sc = state.stores.map(s => {
+      const cost = state.items.reduce((sum,item)=>{
+        if(item.bestStore===s.id) return sum+Math.max(0,item.need-item.onHand)*(item.bestPrice||0);
+        return sum;
+      },0);
+      return {s,cost};
+    }).sort((a,b)=>b.cost-a.cost);
+    storeEl.innerHTML = sc.map(({s,cost})=>`
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <div style="width:10px;height:10px;border-radius:50%;background:${s.color};flex-shrink:0"></div>
+        <span style="flex:1;font-size:15px;font-weight:600">${s.name}</span>
+        <span class="text-green" style="font-weight:800;font-size:15px;font-variant-numeric:tabular-nums">$${cost.toFixed(2)}</span>
+      </div>
+      <div class="pbar-wrap" style="margin-bottom:8px">
+        <div class="pbar" style="background:${s.color};width:${total>0?Math.min(100,cost/total*100):0}%"></div>
+      </div>`).join('');
   }
-  setSyncStatus("syncing…");
-  try {
-    // Push
-    await fetch(SCRIPT_URL, { method:'POST', body: JSON.stringify({action:'saveAll', state}), mode:'no-cors' });
-    // Pull
-    const res = await fetch(SCRIPT_URL+'?action=loadAll');
-    const data = await res.json();
-    if (data.items)   state.items   = data.items;
-    if (data.stores)  state.stores  = data.stores;
-    if (data.prices)  state.prices  = data.prices;
-    if (data.budget)  state.budget  = data.budget;
-    save();
-    setSyncStatus("synced "+new Date().toLocaleTimeString());
-    renderShopping(); renderDashboard(); renderStores();
-  } catch(e) {
-    setSyncStatus("sync failed");
-    console.error(e);
-  }
+
+  const bpEl = document.getElementById('d-best-prices');
+  const bp = state.prices.length ? (() => {
+    const byItem = {};
+    state.prices.forEach(p=>{ if(!byItem[p.itemId]||p.price<byItem[p.itemId].price) byItem[p.itemId]=p; });
+    return Object.values(byItem).map(p=>({
+      item:  state.items.find(i=>i.id===p.itemId),
+      store: state.stores.find(s=>s.id===p.storeId),
+      price: p.price
+    })).filter(x=>x.item&&x.store).slice(0,8);
+  })() : [];
+  bpEl.innerHTML = bp.length ? bp.map(({item,store,price})=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">
+      <div style="flex:1;font-size:14px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.name}</div>
+      <div style="text-align:right;flex-shrink:0">
+        <div class="text-green" style="font-weight:800;font-variant-numeric:tabular-nums">$${(+price).toFixed(2)}</div>
+        <div style="font-size:12px;color:${store.color}">${store.name}</div>
+      </div>
+    </div>`).join('') + '<div style="height:4px"></div>'
+    : '<div class="text-muted" style="font-size:14px">Log prices in Shopping tab</div>';
+
+  const slEl = document.getElementById('d-stock-levels');
+  slEl.innerHTML = state.items.filter(i=>i.need>0).slice(0,10).map(i=>{
+    const pct = Math.min(100, i.need>0?i.onHand/i.need*100:0);
+    const color = pct>=80?'var(--green)':pct>=40?'var(--amber)':'var(--red)';
+    return `<div style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;margin-right:8px">${i.name}</span>
+        <span style="color:${color};font-variant-numeric:tabular-nums;flex-shrink:0">${i.onHand}/${i.need}</span>
+      </div>
+      <div class="pbar-wrap"><div class="pbar" style="background:${color};width:${pct}%"></div></div>
+    </div>`;
+  }).join('');
 }
-function setSyncStatus(msg) { document.getElementById('sync-status').textContent = msg; }
 
-
-// ── Settings ─────────────────────────────────────────────────────────────────
+// ── Settings ──────────────────────────────────────────────────────────────────
 function openSettings() {
-  document.getElementById('settings-script-url').value = SCRIPT_URL || '';
-  document.getElementById('settings-budget').value = state.budget || 200;
+  document.getElementById('settings-url').value = SCRIPT_URL||'';
+  document.getElementById('settings-budget').value = state.budget||200;
   updateSettingsStatus();
-  openModal('modal-settings');
+  openModal('bg-settings','modal-settings');
 }
 function saveSettings() {
-  const url = document.getElementById('settings-script-url').value.trim();
-  const budget = +document.getElementById('settings-budget').value || 200;
+  const url = document.getElementById('settings-url').value.trim();
   SCRIPT_URL = url;
-  state.budget = budget;
+  state.budget = +document.getElementById('settings-budget').value||200;
   if (url) localStorage.setItem('fmp_script_url', url);
   else localStorage.removeItem('fmp_script_url');
-  save();
-  updateSettingsStatus();
-  closeModal('modal-settings');
+  save(); updateSettingsStatus();
+  closeModal('bg-settings','modal-settings');
   renderDashboardStats();
 }
 function updateSettingsStatus() {
-  const dot = document.getElementById('settings-status-dot');
-  const txt = document.getElementById('settings-status-text');
-  const url = document.getElementById('settings-script-url')?.value || SCRIPT_URL;
+  const dot = document.getElementById('settings-dot');
+  const sdot = document.getElementById('settings-dot');
+  const txt = document.getElementById('settings-status-txt');
+  const url = document.getElementById('settings-url')?.value || SCRIPT_URL;
   if (!url) {
-    dot.className = 'status-dot disconnected';
-    txt.textContent = 'Not connected — paste your Apps Script URL below';
-  } else if (url.includes('script.google.com/macros/s/')) {
-    dot.className = 'status-dot connected';
-    txt.textContent = 'URL looks good — test the connection to confirm';
+    sdot.className='status-dot bad'; txt.textContent='Not connected — paste Apps Script URL below';
+    dot.className='sync-dot err';
+  } else if (url.includes('/macros/s/')) {
+    sdot.className='status-dot ok'; txt.textContent='URL looks good — tap Test to confirm';
+    dot.className='sync-dot ok';
   } else {
-    dot.className = 'status-dot unknown';
-    txt.textContent = 'URL format unexpected — make sure it ends in /exec';
+    sdot.className='status-dot unk'; txt.textContent='URL looks unusual — should end in /exec';
+    dot.className='sync-dot';
   }
 }
 async function testConnection() {
-  const url = document.getElementById('settings-script-url').value.trim();
-  const hint = document.getElementById('settings-url-hint');
-  if (!url) { hint.textContent = 'Enter a URL first.'; return; }
-  hint.textContent = 'Testing…';
+  const url = document.getElementById('settings-url').value.trim();
+  const hint = document.getElementById('settings-hint');
+  if (!url) { hint.textContent='Enter a URL first'; return; }
+  hint.textContent='Testing…'; hint.style.color='var(--muted)';
   try {
-    const res = await fetch(url + '?action=loadAll');
+    const res = await fetch(url+'?action=loadAll');
     const data = await res.json();
     if (data.items !== undefined) {
-      hint.style.color = 'var(--green)';
-      hint.textContent = '✓ Connected — Sheet responded with ' + data.items.length + ' items';
-      document.getElementById('settings-status-dot').className = 'status-dot connected';
-      document.getElementById('settings-status-text').textContent = 'Connected to Google Sheets';
+      hint.style.color='var(--green)';
+      hint.textContent=`✓ Connected — ${data.items.length} items in Sheet`;
+      document.getElementById('settings-dot').className='status-dot ok';
     } else {
-      hint.style.color = 'var(--amber)';
-      hint.textContent = '⚠ Got a response but unexpected format: ' + JSON.stringify(data).slice(0,80);
+      hint.style.color='var(--amber)';
+      hint.textContent='⚠ Unexpected response: '+JSON.stringify(data).slice(0,60);
     }
   } catch(e) {
-    hint.style.color = 'var(--red)';
-    hint.textContent = '✕ Connection failed — check the URL and make sure deployment is set to Anyone';
+    hint.style.color='var(--red)';
+    hint.textContent='✕ Failed — check URL and set deployment access to Anyone';
   }
 }
 function exportData() {
-  const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+  const blob = new Blob([JSON.stringify(state,null,2)], {type:'application/json'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'family-planner-backup-' + new Date().toISOString().slice(0,10) + '.json';
+  a.download = 'family-planner-'+new Date().toISOString().slice(0,10)+'.json';
   a.click();
 }
 function resetItems() {
-  if (!confirm('Reset all items to the default meal plan list? Your on-hand amounts, prices, and stores will be cleared.')) return;
-  seedDefaults();
-  save(); closeModal('modal-settings'); renderShopping(); renderDashboardStats();
+  if (!confirm('Reset all items to defaults? On-hand amounts and prices will be cleared.')) return;
+  seedDefaults(); save();
+  closeModal('bg-settings','modal-settings');
+  renderShopping(); renderDashboardStats();
 }
 function clearAllData() {
-  if (!confirm('Clear ALL data including stores, prices, and items? This cannot be undone.')) return;
-  state = { stores:[], items:[], prices:[], budget:200, mealView:'david' };
-  seedDefaults();
-  save(); closeModal('modal-settings');
+  if (!confirm('Clear ALL data? This cannot be undone.')) return;
+  state = {stores:[],items:[],prices:[],budget:200,mealView:'david'};
+  seedDefaults(); save();
+  closeModal('bg-settings','modal-settings');
   renderShopping(); renderDashboard(); renderStores();
 }
 
-// ── Close modals on bg click ──────────────────────────────────────────────────
-document.querySelectorAll('.modal-bg').forEach(bg=>{
-  bg.addEventListener('click', e=>{ if(e.target===bg) bg.classList.remove('open'); });
+// ── Sync ──────────────────────────────────────────────────────────────────────
+async function syncAll() {
+  if (!SCRIPT_URL) { openSettings(); return; }
+  const dot = document.getElementById('sync-dot');
+  dot.className = 'sync-dot spin';
+  try {
+    await fetch(SCRIPT_URL, {method:'POST', body:JSON.stringify({action:'saveAll',state}), mode:'no-cors'});
+    const res = await fetch(SCRIPT_URL+'?action=loadAll');
+    const data = await res.json();
+    if (data.items)  state.items  = data.items;
+    if (data.stores) state.stores = data.stores;
+    if (data.prices) state.prices = data.prices;
+    if (data.budget) state.budget = data.budget;
+    save();
+    dot.className = 'sync-dot ok';
+    refreshStoreSelects();
+    if (currentTab==='dashboard') renderDashboard();
+    if (currentTab==='shopping')  renderShopping();
+    if (currentTab==='stores')    renderStores();
+  } catch(e) {
+    dot.className = 'sync-dot err';
+    console.error(e);
+  }
+}
+
+// ── PWA install ───────────────────────────────────────────────────────────────
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('install-banner').classList.add('show');
 });
+async function installPWA() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  if (outcome === 'accepted') document.getElementById('install-banner').classList.remove('show');
+  deferredPrompt = null;
+}
+window.addEventListener('appinstalled', () => {
+  document.getElementById('install-banner').classList.remove('show');
+});
+
+// ── Service Worker (offline support) ─────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  const swCode = `
+    const CACHE = 'fmp-v1';
+    self.addEventListener('install', e => {
+      e.waitUntil(caches.open(CACHE).then(c => c.addAll(['/'])));
+      self.skipWaiting();
+    });
+    self.addEventListener('activate', e => {
+      e.waitUntil(caches.keys().then(keys =>
+        Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));
+      self.clients.claim();
+    });
+    self.addEventListener('fetch', e => {
+      if (e.request.url.includes('script.google.com')) return;
+      e.respondWith(
+        caches.match(e.request).then(r => r || fetch(e.request).then(resp => {
+          if (resp && resp.status===200 && e.request.method==='GET') {
+            const clone = resp.clone();
+            caches.open(CACHE).then(c => c.put(e.request, clone));
+          }
+          return resp;
+        }).catch(() => caches.match('/')))
+      );
+    });
+  `;
+  const blob = new Blob([swCode], {type:'text/javascript'});
+  const swUrl = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(swUrl).catch(()=>{});
+}
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 load();
 refreshStoreSelects();
 renderMealPlan();
 renderDashboardStats();
+updateSettingsStatus();
 </script>
 </body>
 </html>
