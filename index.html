@@ -260,6 +260,19 @@ select option { background: var(--card2); }
 .install-banner-text { flex: 1; font-size: 14px; line-height: 1.4; }
 .install-banner-text strong { color: var(--green); }
 
+.freq-badge { font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;text-transform:uppercase;letter-spacing:.04em; }
+.freq-weekly   { background:rgba(62,207,142,.15);color:var(--green); }
+.freq-biweekly { background:rgba(79,142,247,.15);color:var(--blue); }
+.freq-monthly  { background:rgba(167,139,250,.15);color:var(--purple); }
+.shop-item.skipped { opacity:.45; }
+.skip-btn { background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:11px;padding:3px 8px;cursor:pointer;white-space:nowrap; }
+.skip-btn:active { opacity:.7; }
+.inv-stepper { display:flex;align-items:center;gap:0;background:var(--bg);border:1px solid var(--border);border-radius:8px;overflow:hidden; }
+.inv-stepper button { background:none;border:none;color:var(--text);font-size:18px;font-weight:700;width:38px;height:38px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0; }
+.inv-stepper button:active { background:var(--border); }
+.inv-stepper input { background:none;border:none;border-left:1px solid var(--border);border-right:1px solid var(--border);color:var(--text);font-size:15px;font-weight:700;width:64px;text-align:center;padding:0;height:38px;outline:none;font-variant-numeric:tabular-nums; }
+.inv-stepper .inv-unit { font-size:11px;color:var(--muted);padding:0 8px;white-space:nowrap; }
+
 /* ── WoW pills ── */
 .wow-wrap { display: flex; flex-wrap: wrap; gap: 6px; }
 .wow-pill { background: var(--card2); border: 1px solid var(--border); border-radius: 20px; padding: 6px 11px; font-size: 13px; }
@@ -404,32 +417,67 @@ code { background: var(--card2); padding: 2px 6px; border-radius: 5px; font-size
 ═════════════════════════════════════════════════════════════════════════════ -->
 <div class="panel" id="panel-shopping">
 
-  <div class="card" style="display:flex;gap:16px;align-items:center">
-    <div>
-      <div class="stat-val text-green mono" id="sh-total" style="font-size:20px">$0</div>
-      <div class="stat-lbl">Est. total</div>
-    </div>
-    <div>
-      <div class="stat-val mono" style="color:var(--blue);font-size:20px" id="sh-needed">0</div>
-      <div class="stat-lbl">To buy</div>
-    </div>
-    <div>
-      <div class="stat-val mono" style="color:var(--teal);font-size:20px" id="sh-checked">0</div>
-      <div class="stat-lbl">Checked</div>
-    </div>
-    <div style="margin-left:auto;display:flex;gap:8px;flex-direction:column">
-      <button class="btn btn-ghost btn-sm" onclick="clearChecked()">Clear ✓</button>
+  <!-- Cycle bar -->
+  <div class="card" style="padding:12px 14px;margin-bottom:10px">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Shop Cycle</div>
+        <div id="sh-cycle-info" style="font-size:14px;font-weight:600;margin-top:2px">No cycle started</div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="startNewCycle()">🔄 New Cycle</button>
     </div>
   </div>
 
-  <!-- Store filter -->
-  <div style="margin-bottom:10px">
-    <select id="store-filter" onchange="renderShopping()" class="input-sm">
+  <!-- Summary + controls -->
+  <div class="card" style="padding:12px 14px;margin-bottom:10px">
+    <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+      <div>
+        <div class="stat-val text-green mono" id="sh-total" style="font-size:20px">$0</div>
+        <div class="stat-lbl">Est. total</div>
+      </div>
+      <div>
+        <div class="stat-val mono" style="color:var(--blue);font-size:20px" id="sh-needed">0</div>
+        <div class="stat-lbl">To buy</div>
+      </div>
+      <div>
+        <div class="stat-val mono" style="color:var(--teal);font-size:20px" id="sh-checked">0</div>
+        <div class="stat-lbl">Checked</div>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:8px;flex-direction:column">
+        <button class="btn btn-ghost btn-sm" onclick="clearChecked()">Clear ✓</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters row -->
+  <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">
+    <select id="store-filter" onchange="renderShopping()" class="input-sm" style="flex:1">
       <option value="">All stores</option>
+    </select>
+    <select id="freq-filter" onchange="renderShopping()" class="input-sm" style="flex:1">
+      <option value="">All frequencies</option>
+      <option value="weekly">Weekly</option>
+      <option value="biweekly">Bi-weekly</option>
+      <option value="monthly">Monthly</option>
     </select>
   </div>
 
   <div id="shopping-list"></div>
+
+  <!-- Skipped section -->
+  <div id="skipped-section" style="display:none;margin-top:6px">
+    <div class="cat-accordion">
+      <div class="cat-accordion-hdr" onclick="toggleCat(this,'catbody-skipped')">
+        <span class="cat-accordion-icon">⏭</span>
+        <span class="cat-accordion-name">Skipped This Cycle</span>
+        <div class="cat-accordion-meta"><span class="chip chip-muted" id="skipped-count-chip" style="font-size:11px">0</span></div>
+        <span class="cat-chevron">▼</span>
+      </div>
+      <div class="cat-accordion-body" id="catbody-skipped" style="display:none">
+        <div id="skipped-list"></div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- ════════════════════════════════════════════════════════════════════════════
@@ -439,13 +487,13 @@ code { background: var(--card2); padding: 2px 6px; border-radius: 5px; font-size
 
   <div style="display:flex;gap:8px;margin-bottom:12px">
     <button class="btn btn-primary btn-sm" onclick="openAddStore()">+ Store</button>
-    <button class="btn btn-ghost btn-sm" onclick="openLogPrice()">📝 Log Price</button>
+    <button class="btn btn-ghost btn-sm" onclick="openLogPurchase()">🛍 Log Purchase</button>
   </div>
 
   <div class="sec-hdr">Stores</div>
   <div id="stores-list"></div>
 
-  <div class="sec-hdr">Price History</div>
+  <div class="sec-hdr">Purchase History</div>
   <div class="card" style="padding:0 14px">
     <div id="price-history"></div>
   </div>
@@ -495,6 +543,13 @@ code { background: var(--card2); padding: 2px 6px; border-radius: 5px; font-size
       <div class="form-row" style="margin-bottom:0"><label>Need/Week</label><input type="number" id="fi-need" placeholder="1" step="0.1"></div>
     </div>
     <div class="form-row" style="margin-top:14px"><label>Unit (lbs, cans, oz…)</label><input id="fi-unit" placeholder="lbs" autocomplete="off"></div>
+    <div class="form-row"><label>Buy Frequency</label>
+      <select id="fi-freq">
+        <option value="weekly">Weekly</option>
+        <option value="biweekly" selected>Bi-weekly (every 2 weeks)</option>
+        <option value="monthly">Monthly</option>
+      </select>
+    </div>
     <div class="edit-grid">
       <div class="form-row" style="margin-bottom:0"><label>Best Price ($)</label><input type="number" id="fi-price" placeholder="0.00" step="0.01"></div>
       <div class="form-row" style="margin-bottom:0"><label>Store</label><select id="fi-store"><option value="">—</option></select></div>
@@ -528,21 +583,36 @@ code { background: var(--card2); padding: 2px 6px; border-radius: 5px; font-size
   </div>
 </div>
 
-<!-- Log Price -->
+<!-- Log Purchase -->
 <div class="modal-bg" id="bg-price">
   <div class="modal" id="modal-price">
     <div class="modal-handle"></div>
-    <div class="modal-title">Log Price</div>
-    <div class="form-row"><label>Store</label><select id="fp-store"><option value="">— select —</option></select></div>
-    <div class="form-row"><label>Item</label><select id="fp-item"><option value="">— select —</option></select></div>
+    <div class="modal-title">Log Purchase</div>
+    <div class="form-row"><label>Item</label><select id="fp-item"><option value="">— select item —</option></select></div>
+    <div class="form-row"><label>Store</label><select id="fp-store"><option value="">— select store —</option></select></div>
     <div class="edit-grid">
-      <div class="form-row" style="margin-bottom:0"><label>Price ($)</label><input type="number" id="fp-price" placeholder="0.00" step="0.01"></div>
-      <div class="form-row" style="margin-bottom:0"><label>Date</label><input type="date" id="fp-date"></div>
+      <div class="form-row" style="margin-bottom:0">
+        <label>Qty Bought</label>
+        <input type="number" id="fp-qty" placeholder="1" step="0.1" min="0.1" oninput="updatePurchaseTotal()">
+      </div>
+      <div class="form-row" style="margin-bottom:0">
+        <label>Price per Unit ($)</label>
+        <input type="number" id="fp-price" placeholder="0.00" step="0.01" oninput="updatePurchaseTotal()">
+      </div>
     </div>
-    <div class="form-row" style="margin-top:14px"><label>Notes</label><input id="fp-notes" placeholder="e.g. on sale, store brand" autocomplete="off"></div>
+    <!-- Total display -->
+    <div id="fp-total-row" style="display:none;margin-top:10px;padding:10px 12px;background:var(--card2);border-radius:10px;border:1px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:14px;color:var(--muted)">Total spent</span>
+        <span id="fp-total-val" style="font-size:20px;font-weight:800;color:var(--green);font-variant-numeric:tabular-nums">$0.00</span>
+      </div>
+      <div id="fp-inventory-preview" style="font-size:12px;color:var(--muted);margin-top:4px"></div>
+    </div>
+    <div class="form-row" style="margin-top:14px"><label>Date</label><input type="date" id="fp-date"></div>
+    <div class="form-row"><label>Notes</label><input id="fp-notes" placeholder="e.g. on sale, Costco" autocomplete="off"></div>
     <div class="form-actions">
       <button class="btn btn-ghost" onclick="closeModal('bg-price','modal-price')">Cancel</button>
-      <button class="btn btn-primary" onclick="savePrice()">Log Price</button>
+      <button class="btn btn-primary" onclick="savePurchase()">Save Purchase</button>
     </div>
   </div>
 </div>
@@ -610,8 +680,10 @@ code { background: var(--card2); padding: 2px 6px; border-radius: 5px; font-size
 let SCRIPT_URL = localStorage.getItem('fmp_script_url') || '';
 
 let state = {
-  stores: [], items: [], prices: [],
-  budget: 200, mealView: 'david'
+  stores: [], items: [], prices: [], purchases: [],
+  budget: 200, mealView: 'david',
+  cycleStart: null,   // ISO date string — when current shop cycle started
+  cycleNum: 1         // increments each new cycle for skip reset logic
 };
 
 const DINNERS = [
@@ -692,7 +764,9 @@ function seedDefaults() {
   state.items = DEFAULT_ITEMS.map((d,i) => ({
     id:'item_'+i, name:d.name, cat:d.cat, onHand:0,
     need:d.need, unit:d.unit, bestPrice:0, bestStore:'',
-    notes:d.notes, checked:false
+    notes:d.notes, checked:false,
+    freq:'biweekly',    // 'weekly' | 'biweekly' | 'monthly'
+    skippedCycle: null  // cycleNum when skipped — null = not skipped
   }));
 }
 
@@ -821,84 +895,131 @@ function renderMealPlan() {
     ${familyPrep.map(t=>`<div style="display:flex;gap:10px;padding:5px 0;font-size:14px;color:var(--muted)"><span style="color:var(--muted);font-size:12px;margin-top:3px">●</span>${t}</div>`).join('')}`;
 }
 
+// ── Shopping helpers ─────────────────────────────────────────────────────────
+function isSkipped(item) {
+  return item.skippedCycle != null && item.skippedCycle === state.cycleNum;
+}
+function freqLabel(f) { return f==='weekly'?'Weekly':f==='monthly'?'Monthly':'Bi-weekly'; }
+function freqClass(f) { return f==='weekly'?'freq-weekly':f==='monthly'?'freq-monthly':'freq-biweekly'; }
+function cycleNeed(item) {
+  const f = item.freq || 'biweekly';
+  const base = Math.max(0, item.need - item.onHand);
+  if (f === 'weekly')   return +(base * 2).toFixed(2);
+  if (f === 'monthly')  return +(base * 0.5).toFixed(2);
+  return +base.toFixed(2);
+}
+function itemUnitPrice(item) {
+  const pur = (state.purchases||[]).filter(p=>p.itemId===item.id).sort((a,b)=>b.date.localeCompare(a.date));
+  return pur.length ? pur[0].unitPrice : (item.bestPrice||0);
+}
+function renderItemRow(item) {
+  const toBuy = cycleNeed(item);
+  const unitPrice = itemUnitPrice(item);
+  const cost = +(toBuy * unitPrice).toFixed(2);
+  const store = state.stores.find(s=>s.id===item.bestStore);
+  const recentPur = (state.purchases||[]).filter(p=>p.itemId===item.id).sort((a,b)=>b.date.localeCompare(a.date))[0]||null;
+  const freq = item.freq||'biweekly';
+  const recentStore = recentPur ? state.stores.find(s=>s.id===recentPur.storeId) : null;
+  const priceStr = recentPur
+    ? `· last <strong>$${recentPur.unitPrice.toFixed(2)}</strong>${recentStore?' @ '+recentStore.name:''}`
+    : (item.bestPrice ? `· est. $${item.bestPrice.toFixed(2)}` : '<span style="color:var(--amber)">· no price yet</span>');
+  return `
+    <div class="shop-item" id="sitem-${item.id}">
+      <div class="shop-check ${item.checked?'checked':''}" onclick="toggleCheck('${item.id}')">
+        ${item.checked?'✓':''}
+      </div>
+      <div class="shop-item-main" onclick="toggleItemEdit('${item.id}')">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <span class="shop-item-name ${item.checked?'checked-text':''}">${item.name}</span>
+          <span class="freq-badge ${freqClass(freq)}">${freqLabel(freq)}</span>
+        </div>
+        <div class="shop-item-meta">
+          <span id="inv-onhand-${item.id}">${item.onHand}</span> on hand · need ${toBuy} ${item.unit} this cycle
+          ${store ? `· <span style="color:${store.color}">${store.name}</span>` : ''}
+          ${priceStr}
+        </div>
+      </div>
+      <div class="shop-item-right">
+        ${cost > 0 ? `<div class="shop-item-cost">$${cost.toFixed(2)}</div>` : ''}
+        ${toBuy > 0 ? `<div class="shop-item-tobuy">Buy ${toBuy} ${item.unit}</div>` : `<div class="shop-item-stocked">✓ stocked</div>`}
+        <button class="btn btn-primary btn-sm" onclick="openLogPurchase('${item.id}')" style="font-size:11px;padding:4px 8px">🛍 Buy</button>
+      </div>
+    </div>
+    <div class="item-edit-panel" id="edit-${item.id}">
+      <div style="font-size:13px;font-weight:700;color:var(--muted);margin-bottom:10px">${item.name}</div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+        <button class="btn btn-primary btn-sm" onclick="openLogPurchase('${item.id}')">🛍 Log Purchase</button>
+        <button class="btn btn-ghost btn-sm" onclick="editItemFull('${item.id}')">✏ Edit</button>
+        <button class="skip-btn" onclick="toggleSkip('${item.id}')">${isSkipped(item)?'↩ Unskip':'⏭ Skip cycle'}</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteItem('${item.id}')">✕</button>
+      </div>
+      <!-- Inventory stepper -->
+      <div style="margin-bottom:10px">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">On Hand</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="inv-stepper">
+            <button onclick="adjustOnHand('${item.id}',-1)" title="Remove 1">−</button>
+            <input type="number" id="inv-input-${item.id}" value="${item.onHand}" step="0.1"
+              onchange="setOnHand('${item.id}',+this.value)"
+              onfocus="this.select()">
+            <button onclick="adjustOnHand('${item.id}',1)" title="Add 1">+</button>
+          </div>
+          <span class="inv-unit">${item.unit}</span>
+          <span style="font-size:12px;color:var(--muted)" id="inv-need-${item.id}">
+            ${toBuy > 0 ? `<span style="color:var(--amber)">need ${toBuy} more</span>` : '<span style="color:var(--green)">✓ stocked</span>'}
+          </span>
+        </div>
+      </div>
+      <div style="background:var(--bg);border-radius:8px;padding:10px;font-size:13px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span style="color:var(--muted)">Need this cycle</span>
+          <span style="font-weight:700;color:${toBuy>0?'var(--amber)':'var(--green)'}">
+            ${toBuy > 0 ? toBuy+' '+item.unit : '✓ stocked'}
+          </span>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span style="color:var(--muted)">Frequency</span>
+          <span class="freq-badge ${freqClass(freq)}">${freqLabel(freq)}</span>
+        </div>
+        ${recentPur ? `<div style="display:flex;justify-content:space-between;">
+          <span style="color:var(--muted)">Last price</span>
+          <span style="font-weight:700;color:var(--green)">$${recentPur.unitPrice.toFixed(2)}${recentStore?' @ '+recentStore.name:''}</span>
+        </div>` : ''}
+        ${item.notes ? `<div style="color:var(--muted);margin-top:6px;font-size:12px">${item.notes}</div>` : ''}
+      </div>
+    </div>`;
+}
+
 // ── Shopping render ───────────────────────────────────────────────────────────
 function renderShopping() {
-  const filter = document.getElementById('store-filter').value;
-  const cats = [...new Set(state.items.map(i=>i.cat))];
+  updateCycleInfo();
+  const storeFilter = document.getElementById('store-filter').value;
+  const freqFilter  = document.getElementById('freq-filter').value;
+
+  const activeItems  = state.items.filter(i => !isSkipped(i) && (!storeFilter||i.bestStore===storeFilter) && (!freqFilter||(i.freq||'biweekly')===freqFilter));
+  const skippedItems = state.items.filter(i =>  isSkipped(i));
+
+  const cats = [...new Set(activeItems.map(i=>i.cat))];
   let needed=0, total=0, checked=0;
 
   const html = cats.map(cat => {
-    const items = state.items.filter(i => i.cat===cat && (!filter || i.bestStore===filter));
+    const items = activeItems.filter(i=>i.cat===cat);
     if (!items.length) return '';
-
     let catTotal = 0;
     const itemsHtml = items.map(item => {
-      const toBuy = Math.max(0, item.need - item.onHand);
-      const cost = toBuy * (item.bestPrice||0);
+      const toBuy = cycleNeed(item);
+      const cost  = +(toBuy * itemUnitPrice(item)).toFixed(2);
       catTotal += cost;
       if (toBuy > 0) needed++;
       total += cost;
       if (item.checked) checked++;
-
-      const store = state.stores.find(s=>s.id===item.bestStore);
-      const pHist = state.prices.filter(p=>p.itemId===item.id);
-      const minP = pHist.length ? Math.min(...pHist.map(p=>p.price)) : null;
-      const bestStore = minP!=null ? state.stores.find(s=>s.id===pHist.find(p=>p.price===minP)?.storeId) : null;
-
-      return `
-        <div class="shop-item" id="sitem-${item.id}">
-          <div class="shop-check ${item.checked?'checked':''}" onclick="toggleCheck('${item.id}')">
-            ${item.checked?'✓':''}
-          </div>
-          <div class="shop-item-main" onclick="toggleItemEdit('${item.id}')">
-            <div class="shop-item-name ${item.checked?'checked-text':''}">${item.name}</div>
-            <div class="shop-item-meta">
-              ${item.onHand} on hand · need ${item.need} ${item.unit}
-              ${store ? `· <span style="color:${store.color}">${store.name}</span>` : ''}
-              ${minP!=null ? `· best $${minP.toFixed(2)}${bestStore?' @ '+bestStore.name:''}` : ''}
-            </div>
-          </div>
-          <div class="shop-item-right">
-            ${cost > 0 ? `<div class="shop-item-cost">$${cost.toFixed(2)}</div>` : ''}
-            ${toBuy > 0
-              ? `<div class="shop-item-tobuy">Buy ${toBuy} ${item.unit}</div>`
-              : `<div class="shop-item-stocked">✓ stocked</div>`}
-            <button onclick="quickLogPrice('${item.id}')" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;padding:2px">+$</button>
-          </div>
-        </div>
-        <div class="item-edit-panel" id="edit-${item.id}">
-          <div class="edit-label" style="margin-bottom:8px">${item.name}</div>
-          <div class="edit-grid">
-            <div><div class="edit-label">On Hand</div>
-              <input class="input-sm" type="number" value="${item.onHand}" step="0.1"
-                onchange="updateField('${item.id}','onHand',+this.value)" style="width:100%">
-            </div>
-            <div><div class="edit-label">Need / Week</div>
-              <input class="input-sm" type="number" value="${item.need}" step="0.1"
-                onchange="updateField('${item.id}','need',+this.value)" style="width:100%">
-            </div>
-            <div><div class="edit-label">Unit Price ($)</div>
-              <input class="input-sm" type="number" value="${item.bestPrice||''}" step="0.01" placeholder="$0.00"
-                onchange="updateField('${item.id}','bestPrice',+this.value)" style="width:100%">
-            </div>
-            <div><div class="edit-label">Store</div>
-              <select class="input-sm" onchange="updateField('${item.id}','bestStore',this.value)" style="width:100%">
-                <option value="">—</option>
-                ${state.stores.map(s=>`<option value="${s.id}" ${item.bestStore===s.id?'selected':''}>${s.name}</option>`).join('')}
-              </select>
-            </div>
-          </div>
-          <div style="display:flex;gap:8px;margin-top:4px">
-            <button class="btn btn-ghost btn-sm" onclick="editItemFull('${item.id}')">Edit Details</button>
-            <button class="btn btn-danger btn-sm" onclick="deleteItem('${item.id}')">Remove</button>
-          </div>
-        </div>`;
+      return renderItemRow(item);
     }).join('');
-
-    const lowCount = items.filter(i=>Math.max(0,i.need-i.onHand)>0).length;
+    const lowCount = items.filter(i=>cycleNeed(i)>0).length;
+    const cid = cat.replace(/[^\w]/g,'_');
     return `
       <div class="cat-accordion">
-        <div class="cat-accordion-hdr" onclick="toggleCat(this,'catbody-${cat.replace(/\s/g,'_')}')">
+        <div class="cat-accordion-hdr" onclick="toggleCat(this,'catbody-${cid}')">
           <span class="cat-accordion-icon">${cat.split(' ')[0]}</span>
           <span class="cat-accordion-name">${cat.replace(/^\S+\s/,'')}</span>
           <div class="cat-accordion-meta">
@@ -907,16 +1028,33 @@ function renderShopping() {
           </div>
           <span class="cat-chevron open">▼</span>
         </div>
-        <div class="cat-accordion-body open" id="catbody-${cat.replace(/\s/g,'_')}" style="display:block">
+        <div class="cat-accordion-body open" id="catbody-${cid}" style="display:block">
           ${itemsHtml}
         </div>
       </div>`;
   }).join('');
 
   document.getElementById('shopping-list').innerHTML = html || '<div class="empty-state"><div class="empty-icon">🛒</div>No items yet</div>';
-  document.getElementById('sh-needed').textContent = needed;
-  document.getElementById('sh-total').textContent = '$'+total.toFixed(2);
+  document.getElementById('sh-needed').textContent  = needed;
+  document.getElementById('sh-total').textContent   = '$'+total.toFixed(2);
   document.getElementById('sh-checked').textContent = checked;
+
+  const skippedSec = document.getElementById('skipped-section');
+  if (skippedItems.length) {
+    skippedSec.style.display = 'block';
+    document.getElementById('skipped-count-chip').textContent = skippedItems.length + ' item' + (skippedItems.length!==1?'s':'');
+    document.getElementById('skipped-list').innerHTML = skippedItems.map(item=>`
+      <div class="shop-item" style="opacity:.5">
+        <div style="width:24px;flex-shrink:0;text-align:center;color:var(--muted);font-size:16px">⏭</div>
+        <div class="shop-item-main">
+          <div class="shop-item-name">${item.name}</div>
+          <div class="shop-item-meta">skipped this cycle · ${freqLabel(item.freq||'biweekly')}</div>
+        </div>
+        <button class="skip-btn" onclick="toggleSkip('${item.id}')">↩ Unskip</button>
+      </div>`).join('');
+  } else {
+    skippedSec.style.display = 'none';
+  }
 }
 
 function toggleCat(hdr, bodyId) {
@@ -956,9 +1094,83 @@ function updateField(id, field, val) {
   const item = state.items.find(i=>i.id===id);
   if (item) { item[field]=val; save(); renderDashboardStats(); }
 }
+function adjustOnHand(id, delta) {
+  const item = state.items.find(i=>i.id===id);
+  if (!item) return;
+  const step = item.unit==='lbs'||item.unit==='oz'||item.unit==='kg' ? 0.5 : 1;
+  item.onHand = Math.max(0, +(item.onHand + delta * step).toFixed(2));
+  _syncOnHandUI(item);
+  save();
+}
+function setOnHand(id, val) {
+  const item = state.items.find(i=>i.id===id);
+  if (!item) return;
+  item.onHand = Math.max(0, +val||0);
+  _syncOnHandUI(item);
+  save();
+}
+function _syncOnHandUI(item) {
+  // Update the input value
+  const inp = document.getElementById('inv-input-'+item.id);
+  if (inp) inp.value = item.onHand;
+  // Update the on-hand display in the item row
+  const span = document.getElementById('inv-onhand-'+item.id);
+  if (span) span.textContent = item.onHand;
+  // Update the "need X more / stocked" indicator
+  const needSpan = document.getElementById('inv-need-'+item.id);
+  if (needSpan) {
+    const toBuy = cycleNeed(item);
+    needSpan.innerHTML = toBuy > 0
+      ? `<span style="color:var(--amber)">need ${toBuy} more</span>`
+      : '<span style="color:var(--green)">✓ stocked</span>';
+  }
+  // Refresh dashboard stats without full re-render
+  renderDashboardStats();
+}
 function clearChecked() {
   state.items.forEach(i=>i.checked=false);
   save(); renderShopping();
+}
+function toggleSkip(id) {
+  const item = state.items.find(i=>i.id===id);
+  if (!item) return;
+  if (isSkipped(item)) {
+    item.skippedCycle = null;
+  } else {
+    item.skippedCycle = state.cycleNum || 1;
+  }
+  save(); renderShopping();
+}
+function startNewCycle() {
+  // Find skipped items from this cycle to prompt about
+  const skipped = state.items.filter(i=>isSkipped(i));
+  if (skipped.length) {
+    const names = skipped.map(i=>i.name).join(', ');
+    const action = confirm(
+      `Starting a new 2-week cycle.\n\n` +
+      `You skipped ${skipped.length} item(s) last cycle:\n${names}\n\n` +
+      `Tap OK to add them back to the new cycle.\nTap Cancel to keep them skipped.`
+    );
+    if (action) {
+      state.items.forEach(i=>{ if(isSkipped(i)) i.skippedCycle=null; });
+    }
+  }
+  state.cycleStart = new Date().toISOString().slice(0,10);
+  state.cycleNum = (state.cycleNum||0) + 1;
+  // Clear checks for new cycle
+  state.items.forEach(i=>i.checked=false);
+  save(); renderShopping();
+}
+function updateCycleInfo() {
+  const el = document.getElementById('sh-cycle-info');
+  if (!state.cycleStart) { el.textContent = 'Tap "New Cycle" to start tracking'; el.style.color='var(--muted)'; return; }
+  const start = new Date(state.cycleStart);
+  const end   = new Date(start); end.setDate(end.getDate()+13);
+  const today = new Date();
+  const daysLeft = Math.max(0, Math.ceil((end-today)/(1000*60*60*24)));
+  const opts = {month:'short',day:'numeric'};
+  el.style.color = daysLeft<=3 ? 'var(--amber)' : 'var(--text)';
+  el.textContent = `${start.toLocaleDateString('en',opts)} – ${end.toLocaleDateString('en',opts)}  ·  ${daysLeft} day${daysLeft!==1?'s':''} left`;
 }
 function deleteItem(id) {
   if (!confirm('Remove this item?')) return;
@@ -986,6 +1198,7 @@ function editItemFull(id) {
   document.getElementById('fi-unit').value = item.unit;
   document.getElementById('fi-price').value = item.bestPrice||'';
   document.getElementById('fi-notes').value = item.notes||'';
+  document.getElementById('fi-freq').value  = item.freq||'biweekly';
   refreshStoreSelects();
   document.getElementById('fi-store').value = item.bestStore||'';
   openModal('bg-item','modal-item');
@@ -993,6 +1206,7 @@ function editItemFull(id) {
 function saveItem() {
   const name = document.getElementById('fi-name').value.trim();
   if (!name) return;
+  const existing = state.items.find(i=>i.id===editItemId);
   const item = {
     id: editItemId || 'item_'+Date.now(), name,
     cat:       document.getElementById('fi-cat').value,
@@ -1002,6 +1216,8 @@ function saveItem() {
     bestPrice:+document.getElementById('fi-price').value||0,
     bestStore: document.getElementById('fi-store').value,
     notes:     document.getElementById('fi-notes').value.trim(),
+    freq:      document.getElementById('fi-freq').value || 'biweekly',
+    skippedCycle: existing ? existing.skippedCycle : null,
     checked: false
   };
   if (editItemId) {
@@ -1040,21 +1256,23 @@ function renderStores() {
 
   // Price history
   const histEl = document.getElementById('price-history');
-  if (!state.prices.length) {
-    histEl.innerHTML = '<div class="empty-state" style="padding:20px 0"><div class="text-muted">No prices logged yet</div></div>';
+  const allPurchases = (state.purchases||[]).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,50);
+  if (!allPurchases.length) {
+    histEl.innerHTML = '<div class="empty-state" style="padding:20px 0"><div class="text-muted">No purchases logged yet</div></div>';
   } else {
-    const sorted = [...state.prices].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,50);
-    histEl.innerHTML = sorted.map(p => {
+    histEl.innerHTML = allPurchases.map(p => {
       const item  = state.items.find(i=>i.id===p.itemId);
       const store = state.stores.find(s=>s.id===p.storeId);
       return `<div class="price-row">
         <div class="price-store-dot" style="background:${store?.color||'#888'}"></div>
-        <div class="price-item-name">${item?.name||'Unknown'}</div>
-        <div style="text-align:right">
-          <div class="price-val">$${(+p.price).toFixed(2)}</div>
-          <div class="price-date">${store?.name||'?'} · ${p.date}</div>
+        <div style="flex:1;min-width:0">
+          <div class="price-item-name">${item?.name||'Unknown'}</div>
+          <div style="font-size:12px;color:var(--muted)">${p.qty} ${item?.unit||''} × $${p.unitPrice.toFixed(2)}${store ? ' · '+store.name : ''} · ${p.date}</div>
         </div>
-        <button onclick="deletePrice('${p.id}')" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;font-size:16px">✕</button>
+        <div style="text-align:right;flex-shrink:0">
+          <div class="price-val">$${p.total.toFixed(2)}</div>
+        </div>
+        <button onclick="deletePurchase('${p.id}')" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;font-size:16px">✕</button>
       </div>`;
     }).join('');
   }
@@ -1083,32 +1301,77 @@ function deletePrice(id) {
   state.prices = state.prices.filter(p=>p.id!==id);
   save(); renderStores();
 }
-function openLogPrice() {
+function deletePurchase(id) {
+  state.purchases = (state.purchases||[]).filter(p=>p.id!==id);
+  save(); renderStores(); renderDashboardStats();
+}
+function openLogPurchase(itemId) {
   refreshStoreSelects();
+  if (itemId) document.getElementById('fp-item').value = itemId;
+  document.getElementById('fp-qty').value = '';
+  document.getElementById('fp-price').value = '';
+  document.getElementById('fp-notes').value = '';
   document.getElementById('fp-date').value = new Date().toISOString().slice(0,10);
-  document.getElementById('fp-price').value='';
-  document.getElementById('fp-notes').value='';
+  document.getElementById('fp-total-row').style.display = 'none';
   openModal('bg-price','modal-price');
 }
-function quickLogPrice(itemId) {
-  refreshStoreSelects();
-  document.getElementById('fp-item').value = itemId;
-  document.getElementById('fp-date').value = new Date().toISOString().slice(0,10);
-  document.getElementById('fp-price').value='';
-  document.getElementById('fp-notes').value='';
-  openModal('bg-price','modal-price');
-}
-function savePrice() {
-  const storeId = document.getElementById('fp-store').value;
-  const itemId  = document.getElementById('fp-item').value;
-  const price   = +document.getElementById('fp-price').value;
-  if (!storeId||!itemId||!price) { alert('Fill in store, item, and price'); return; }
-  state.prices.push({ id:'price_'+Date.now(), storeId, itemId, price,
-    date:  document.getElementById('fp-date').value,
-    notes: document.getElementById('fp-notes').value.trim() });
+// Keep old name as alias for stores tab button
+function openLogPrice() { openLogPurchase(); }
+function quickLogPrice(itemId) { openLogPurchase(itemId); }
+
+function updatePurchaseTotal() {
+  const qty   = +document.getElementById('fp-qty').value || 0;
+  const price = +document.getElementById('fp-price').value || 0;
+  const total = qty * price;
+  const itemId = document.getElementById('fp-item').value;
   const item = state.items.find(i=>i.id===itemId);
-  if (item && (!item.bestPrice || price < item.bestPrice)) { item.bestPrice=price; item.bestStore=storeId; }
-  save(); closeModal('bg-price','modal-price'); renderStores(); renderDashboardStats(); renderShopping();
+  const row = document.getElementById('fp-total-row');
+  if (qty > 0 && price > 0) {
+    row.style.display = 'block';
+    document.getElementById('fp-total-val').textContent = '$' + total.toFixed(2);
+    if (item) {
+      const newOnHand = +(item.onHand || 0) + qty;
+      const newNeed   = Math.max(0, item.need - qty);
+      document.getElementById('fp-inventory-preview').textContent =
+        `On hand: ${item.onHand} → ${newOnHand.toFixed(1)} ${item.unit}  ·  Still need: ${newNeed.toFixed(1)} ${item.unit}`;
+    }
+  } else {
+    row.style.display = 'none';
+  }
+}
+
+function savePurchase() {
+  const itemId  = document.getElementById('fp-item').value;
+  const storeId = document.getElementById('fp-store').value;
+  const qty     = +document.getElementById('fp-qty').value;
+  const price   = +document.getElementById('fp-price').value;
+  if (!itemId || !qty || !price) { alert('Fill in item, quantity, and price per unit'); return; }
+  const purchase = {
+    id: 'pur_' + Date.now(), itemId, storeId,
+    qty, unitPrice: price, total: +(qty * price).toFixed(2),
+    date:  document.getElementById('fp-date').value,
+    notes: document.getElementById('fp-notes').value.trim()
+  };
+  if (!state.purchases) state.purchases = [];
+  state.purchases.push(purchase);
+  // Also log to prices for backwards compat
+  if (storeId) {
+    state.prices.push({ id:'price_'+Date.now(), storeId, itemId, price, date: purchase.date, notes: purchase.notes });
+  }
+  // Update item: add qty to onHand, reduce need by qty
+  const item = state.items.find(i=>i.id===itemId);
+  if (item) {
+    item.onHand  = +(item.onHand + qty).toFixed(2);
+    item.need    = +Math.max(0, item.need - qty).toFixed(2);
+    // Track best price
+    if (storeId && (!item.bestPrice || price < item.bestPrice)) {
+      item.bestPrice = price;
+      item.bestStore = storeId;
+    }
+  }
+  save();
+  closeModal('bg-price','modal-price');
+  renderShopping(); renderStores(); renderDashboardStats();
 }
 function refreshStoreSelects() {
   const opts = state.stores.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
@@ -1126,7 +1389,11 @@ function refreshStoreSelects() {
 // ── Dashboard render ──────────────────────────────────────────────────────────
 function renderDashboard() { renderDashboardStats(); }
 function renderDashboardStats() {
-  const total = state.items.reduce((s,i)=>{ const tb=Math.max(0,i.need-i.onHand); return s+tb*(i.bestPrice||0); },0);
+  const total = state.items.filter(i=>!isSkipped(i)).reduce((s,i)=>{
+    const tb    = cycleNeed(i);
+    const unitP = itemUnitPrice(i);
+    return s + tb * unitP;
+  },0);
   document.getElementById('d-total-cost').textContent = '$'+total.toFixed(0);
   const budget = state.budget||200;
   const pct = Math.min(100,total/budget*100);
@@ -1171,14 +1438,15 @@ function renderDashboardStats() {
   }
 
   const bpEl = document.getElementById('d-best-prices');
-  const bp = state.prices.length ? (() => {
+  const allPur = state.purchases||[];
+  const bp = allPur.length ? (() => {
     const byItem = {};
-    state.prices.forEach(p=>{ if(!byItem[p.itemId]||p.price<byItem[p.itemId].price) byItem[p.itemId]=p; });
+    allPur.forEach(p=>{ if(!byItem[p.itemId]||p.unitPrice<byItem[p.itemId].unitPrice) byItem[p.itemId]=p; });
     return Object.values(byItem).map(p=>({
       item:  state.items.find(i=>i.id===p.itemId),
       store: state.stores.find(s=>s.id===p.storeId),
-      price: p.price
-    })).filter(x=>x.item&&x.store).slice(0,8);
+      price: p.unitPrice
+    })).filter(x=>x.item).slice(0,8);
   })() : [];
   bpEl.innerHTML = bp.length ? bp.map(({item,store,price})=>`
     <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">
@@ -1288,10 +1556,11 @@ async function syncAll() {
     await fetch(SCRIPT_URL, {method:'POST', body:JSON.stringify({action:'saveAll',state}), mode:'no-cors'});
     const res = await fetch(SCRIPT_URL+'?action=loadAll');
     const data = await res.json();
-    if (data.items)  state.items  = data.items;
-    if (data.stores) state.stores = data.stores;
-    if (data.prices) state.prices = data.prices;
-    if (data.budget) state.budget = data.budget;
+    if (data.items)     state.items     = data.items;
+    if (data.stores)    state.stores    = data.stores;
+    if (data.prices)    state.prices    = data.prices;
+    if (data.purchases) state.purchases = data.purchases;
+    if (data.budget)    state.budget    = data.budget;
     save();
     dot.className = 'sync-dot ok';
     refreshStoreSelects();
