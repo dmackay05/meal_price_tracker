@@ -408,6 +408,9 @@ code { background: var(--card2); padding: 2px 6px; border-radius: 5px; font-size
   <div class="sec-hdr">🍽 This Week's Dinners</div>
   <div id="mp-dinners"></div>
 
+  <div class="sec-hdr">📊 Weekly Nutrition Estimate</div>
+  <div class="card" id="mp-nutrition"></div>
+
   <div class="sec-hdr">📋 Sunday Prep</div>
   <div class="card" id="mp-prep"></div>
 </div>
@@ -425,6 +428,7 @@ code { background: var(--card2); padding: 2px 6px; border-radius: 5px; font-size
         <div id="sh-cycle-info" style="font-size:14px;font-weight:600;margin-top:2px">No cycle started</div>
       </div>
       <button class="btn btn-primary btn-sm" onclick="startNewCycle()">🔄 New Cycle</button>
+      <button class="btn btn-ghost btn-sm" onclick="enterShopMode()" title="Store shopping mode">🏪</button>
     </div>
   </div>
 
@@ -442,6 +446,10 @@ code { background: var(--card2); padding: 2px 6px; border-radius: 5px; font-size
       <div>
         <div class="stat-val mono" style="color:var(--teal);font-size:20px" id="sh-checked">0</div>
         <div class="stat-lbl">Checked</div>
+      </div>
+      <div>
+        <div class="stat-val mono" style="color:var(--green);font-size:20px" id="sh-spent">$0</div>
+        <div class="stat-lbl">Spent ✓</div>
       </div>
       <div style="margin-left:auto;display:flex;gap:8px;flex-direction:column">
         <button class="btn btn-ghost btn-sm" onclick="clearChecked()">Clear ✓</button>
@@ -656,6 +664,19 @@ code { background: var(--card2); padding: 2px 6px; border-radius: 5px; font-size
         <span style="font-size:13px;color:var(--muted)">est. $180–220/week</span>
       </div>
     </div>
+    <div class="settings-block">
+      <div class="settings-block-title">Auto-Sync</div>
+      <label style="display:flex;align-items:center;gap:12px;cursor:pointer">
+        <div style="position:relative;width:44px;height:24px;flex-shrink:0">
+          <input type="checkbox" id="settings-autosync" style="opacity:0;width:0;height:0;position:absolute">
+          <span id="autosync-track" style="position:absolute;inset:0;border-radius:12px;background:var(--border);transition:.2s;cursor:pointer"
+            onclick="document.getElementById('settings-autosync').click()"></span>
+          <span id="autosync-thumb" style="position:absolute;left:2px;top:2px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.2s;pointer-events:none"></span>
+        </div>
+        <span style="font-size:14px">Automatically sync to Google Sheet after each change</span>
+      </label>
+      <div style="font-size:12px;color:var(--muted);margin-top:6px">Syncs 3 seconds after your last change. Requires Apps Script URL above.</div>
+    </div>
 
     <div class="settings-block">
       <div class="settings-block-title">Data</div>
@@ -673,6 +694,29 @@ code { background: var(--card2); padding: 2px 6px; border-radius: 5px; font-size
   </div>
 </div>
 
+<!-- Store Shopping Mode -->
+<div id="shop-mode" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:300;flex-direction:column">
+  <div style="background:var(--card);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;gap:10px;padding-top:calc(12px + env(safe-area-inset-top,0px))">
+    <div style="flex:1">
+      <div style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.05em">Shopping Mode</div>
+      <div style="font-size:14px;font-weight:700" id="sm-store-name">All Stores</div>
+    </div>
+    <div style="text-align:right">
+      <div style="font-size:22px;font-weight:800;color:var(--green);font-variant-numeric:tabular-nums" id="sm-spent">$0.00</div>
+      <div style="font-size:11px;color:var(--muted)"><span id="sm-checked-count">0</span> of <span id="sm-total-count">0</span> items</div>
+    </div>
+    <button onclick="exitShopMode()" style="background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer">Done</button>
+  </div>
+  <div style="flex:1;overflow-y:auto;padding:8px 12px 80px" id="sm-list"></div>
+  <div style="position:fixed;bottom:0;left:0;right:0;padding:12px 16px;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));background:var(--card);border-top:1px solid var(--border);display:flex;gap:8px">
+    <div style="flex:1;background:var(--card2);border-radius:10px;padding:10px 14px">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:2px">ESTIMATED REMAINING</div>
+      <div style="font-size:18px;font-weight:800;font-variant-numeric:tabular-nums" id="sm-remaining">$0.00</div>
+    </div>
+    <button onclick="exitShopMode()" class="btn btn-primary" style="flex:1;justify-content:center">✓ Done Shopping</button>
+  </div>
+</div>
+
 <script>
 // ════════════════════════════════════════════════════════════════════════════
 // STATE & CONFIG
@@ -683,7 +727,8 @@ let state = {
   stores: [], items: [], prices: [], purchases: [],
   budget: 200, mealView: 'david',
   cycleStart: null,   // ISO date string — when current shop cycle started
-  cycleNum: 1         // increments each new cycle for skip reset logic
+  cycleNum: 1,        // increments each new cycle for skip reset logic
+  autoSync: false     // auto-sync to Sheet after each change
 };
 
 const DINNERS = [
@@ -751,7 +796,18 @@ const DEFAULT_ITEMS = [
 ];
 
 // ── Persistence ───────────────────────────────────────────────────────────────
-function save() { try { localStorage.setItem('fmp_state', JSON.stringify(state)); } catch(e){} }
+function save() {
+  try { localStorage.setItem('fmp_state', JSON.stringify(state)); } catch(e){}
+  autoSync();
+}
+let _syncTimer = null;
+function autoSync() {
+  if (!SCRIPT_URL || !state.autoSync) return;
+  clearTimeout(_syncTimer);
+  _syncTimer = setTimeout(() => {
+    syncAll(true); // silent=true — no UI feedback for background syncs
+  }, 3000); // wait 3s after last change before syncing
+}
 function load() {
   try {
     const s = localStorage.getItem('fmp_state');
@@ -759,6 +815,7 @@ function load() {
   } catch(e) {}
   if (!state.items || !state.items.length) seedDefaults();
   if (!state.budget) state.budget = 200;
+  state.autoSync = localStorage.getItem('fmp_autosync') === '1';
 }
 function seedDefaults() {
   state.items = DEFAULT_ITEMS.map((d,i) => ({
@@ -804,18 +861,40 @@ function closeBg(bgId, modalId) { closeModal(bgId, modalId); }
 // Close modal only when tapping the dark backdrop (not when keyboard resizes viewport)
 document.querySelectorAll('.modal-bg').forEach(bg => {
   bg.addEventListener('pointerdown', function(e) {
-    // Only close if the tap target is the backdrop itself, not the modal sheet
     if (e.target !== bg) return;
-    // Ignore if modal just opened (within 400ms) — prevents keyboard-triggered close
     const modal = bg.querySelector('.modal');
     if (modal && modal._openedAt && (Date.now() - modal._openedAt) < 400) return;
-    // Find matching modal id from bg id (bg-store -> modal-store)
     const modalId = bg.id.replace('bg-', 'modal-');
-    closeModal(bg.id, modalId);
+    const modalEl = document.getElementById(modalId);
+    if (modalEl) closeModal(bg.id, modalId);
   });
 });
 
 // ── Meal plan render ──────────────────────────────────────────────────────────
+function addDinnerToCart(dinnerIdx) {
+  const din = DINNERS[dinnerIdx];
+  if (!din || !din.ingredients) return;
+  let added = 0, skipped = 0;
+  din.ingredients.forEach(ingName => {
+    // Find matching item by name (case-insensitive partial match)
+    const match = state.items.find(i => i.name.toLowerCase().includes(ingName.toLowerCase().split(' ')[0]) ||
+      ingName.toLowerCase().includes(i.name.toLowerCase().split(' ')[0]));
+    if (match) {
+      // Bump need by 1 unit if not already sufficient
+      if (match.onHand < match.need) { added++; } else {
+        match.need = Math.max(match.need, match.onHand + 1);
+        added++;
+      }
+    } else {
+      skipped++;
+    }
+  });
+  save();
+  const msg = added > 0
+    ? `✓ ${added} ingredient${added!==1?'s':''} flagged in your list${skipped>0?' ('+skipped+' not found — add them manually)':''}. Switch to Shopping tab to see them.`
+    : 'No matching items found. Make sure the ingredients are in your shopping list first.';
+  alert(msg);
+}
 function setMealView(v) {
   state.mealView = v;
   document.getElementById('mp-david-btn').classList.toggle('active', v==='david');
@@ -871,6 +950,9 @@ function renderMealPlan() {
           ${d ? `<span class="chip chip-purple">${din.davidProt}</span>` : ''}
           ${d ? `<span class="chip chip-blue">💡 ${din.tip}</span>` : ''}
         </div>
+        <div style="margin-top:10px;display:flex;align-items:center;gap:8px">
+          <button class="btn btn-ghost btn-sm" onclick="addDinnerToCart(${DINNERS.indexOf(din)})" style="font-size:12px">🛒 Add ingredients to list</button>
+        </div>
       </div>
     </div>`).join('');
 
@@ -888,6 +970,39 @@ function renderMealPlan() {
     'Post dinner list on the fridge',
     'Wash and dry salad greens',
   ];
+  // Nutrition summary
+  const totalProt = DINNERS.reduce((s,d)=>s+(parseInt(d.davidProt)||0),0);
+  const totalCal  = DINNERS.reduce((s,d)=>s+(parseInt(d.davidCal)||0),0);
+  const avgProt   = Math.round(totalProt/7);
+  const avgCal    = Math.round(totalCal/7);
+  const protPct   = Math.min(100,avgProt/170*100);
+  const calPct    = Math.min(100,avgCal/2200*100);
+  const nEl = document.getElementById('mp-nutrition');
+  if (nEl) {
+    if (d) {
+      nEl.innerHTML = `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+          <div style="text-align:center;padding:10px;background:var(--bg);border-radius:8px">
+            <div style="font-size:24px;font-weight:800;color:var(--purple)">${avgProt}g</div>
+            <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Avg protein/day</div>
+            <div class="pbar-wrap" style="margin-top:6px"><div class="pbar" style="background:var(--purple);width:${protPct}%"></div></div>
+            <div style="font-size:11px;color:var(--muted);margin-top:3px">Target: 170g</div>
+          </div>
+          <div style="text-align:center;padding:10px;background:var(--bg);border-radius:8px">
+            <div style="font-size:24px;font-weight:800;color:var(--green)">${avgCal}</div>
+            <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Avg cal/day (dinner)</div>
+            <div class="pbar-wrap" style="margin-top:6px"><div class="pbar" style="background:var(--green);width:${calPct}%"></div></div>
+            <div style="font-size:11px;color:var(--muted);margin-top:3px">Target: ~2,200 total</div>
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.6">
+          Dinner calories only — add ~800–900 cal for breakfast + lunch to reach daily total.
+          ${avgProt >= 155 ? '<span style="color:var(--green)">✓ Protein on track for the week.</span>' : '<span style="color:var(--amber)">⚠ Protein below 155g average — consider adding a shake or snack.</span>'}
+        </div>`;
+    } else {
+      nEl.innerHTML = '<div style="font-size:14px;color:var(--muted)">Switch to David view for nutrition targets.</div>';
+    }
+  }
   document.getElementById('mp-prep').innerHTML = `
     <div style="font-weight:700;margin-bottom:8px;font-size:14px">${d?'For David':'Dad Does'}</div>
     ${davidPrep.map(t=>`<div style="display:flex;gap:10px;padding:5px 0;font-size:14px;color:var(--muted)"><span style="color:var(--green);font-size:12px;margin-top:3px">●</span>${t}</div>`).join('')}
@@ -1038,6 +1153,11 @@ function renderShopping() {
   document.getElementById('sh-needed').textContent  = needed;
   document.getElementById('sh-total').textContent   = '$'+total.toFixed(2);
   document.getElementById('sh-checked').textContent = checked;
+  // Running total = sum of cost for checked items
+  const spent = state.items.filter(i=>i.checked&&!isSkipped(i)).reduce((s,i)=>{
+    return s + cycleNeed(i)*itemUnitPrice(i);
+  },0);
+  document.getElementById('sh-spent').textContent = '$'+spent.toFixed(2);
 
   const skippedSec = document.getElementById('skipped-section');
   if (skippedItems.length) {
@@ -1089,6 +1209,8 @@ function toggleCheck(id) {
   // Update counters
   const checked = state.items.filter(i=>i.checked).length;
   document.getElementById('sh-checked').textContent = checked;
+  const spent = state.items.filter(i=>i.checked&&!isSkipped(i)).reduce((s,i)=>s+cycleNeed(i)*itemUnitPrice(i),0);
+  document.getElementById('sh-spent').textContent = '$'+spent.toFixed(2);
 }
 function updateField(id, field, val) {
   const item = state.items.find(i=>i.id===id);
@@ -1369,6 +1491,16 @@ function savePurchase() {
       item.bestStore = storeId;
     }
   }
+  // Price alert — check if this is cheaper than previous best
+  const prevPurchases = (state.purchases||[]).filter(p=>p.id!==purchase.id&&p.itemId===itemId);
+  if (prevPurchases.length > 0) {
+    const prevBest = Math.min(...prevPurchases.map(p=>p.unitPrice));
+    if (price < prevBest) {
+      const saving = (prevBest - price).toFixed(2);
+      const storeName = state.stores.find(s=>s.id===storeId)?.name || 'this store';
+      setTimeout(()=>alert(`💰 Price alert! ${item?.name||'This item'} is $${saving} cheaper than your best price at ${storeName}. New best: $${price.toFixed(2)}`), 300);
+    }
+  }
   save();
   closeModal('bg-price','modal-price');
   renderShopping(); renderStores(); renderDashboardStats();
@@ -1476,15 +1608,27 @@ function renderDashboardStats() {
 function openSettings() {
   document.getElementById('settings-url').value = SCRIPT_URL||'';
   document.getElementById('settings-budget').value = state.budget||200;
+  const cb = document.getElementById('settings-autosync');
+  cb.checked = state.autoSync||false;
+  _updateToggleUI();
   updateSettingsStatus();
   openModal('bg-settings','modal-settings');
 }
+function _updateToggleUI() {
+  const on = document.getElementById('settings-autosync').checked;
+  document.getElementById('autosync-track').style.background = on ? 'var(--green)' : 'var(--border)';
+  document.getElementById('autosync-thumb').style.left = on ? '22px' : '2px';
+}
+const _asCb = document.getElementById('settings-autosync');
+if (_asCb) _asCb.addEventListener('change', _updateToggleUI);
 function saveSettings() {
   const url = document.getElementById('settings-url').value.trim();
   SCRIPT_URL = url;
-  state.budget = +document.getElementById('settings-budget').value||200;
+  state.budget   = +document.getElementById('settings-budget').value||200;
+  state.autoSync = document.getElementById('settings-autosync').checked;
   if (url) localStorage.setItem('fmp_script_url', url);
   else localStorage.removeItem('fmp_script_url');
+  localStorage.setItem('fmp_autosync', state.autoSync ? '1' : '');
   save(); updateSettingsStatus();
   closeModal('bg-settings','modal-settings');
   renderDashboardStats();
@@ -1548,29 +1692,107 @@ function clearAllData() {
 }
 
 // ── Sync ──────────────────────────────────────────────────────────────────────
-async function syncAll() {
-  if (!SCRIPT_URL) { openSettings(); return; }
+async function syncAll(silent=false) {
+  if (!SCRIPT_URL) { if (!silent) openSettings(); return; }
   const dot = document.getElementById('sync-dot');
   dot.className = 'sync-dot spin';
   try {
     await fetch(SCRIPT_URL, {method:'POST', body:JSON.stringify({action:'saveAll',state}), mode:'no-cors'});
     const res = await fetch(SCRIPT_URL+'?action=loadAll');
     const data = await res.json();
-    if (data.items)     state.items     = data.items;
-    if (data.stores)    state.stores    = data.stores;
-    if (data.prices)    state.prices    = data.prices;
-    if (data.purchases) state.purchases = data.purchases;
-    if (data.budget)    state.budget    = data.budget;
-    save();
+    if (data.items)      state.items      = data.items;
+    if (data.stores)     state.stores     = data.stores;
+    if (data.prices)     state.prices     = data.prices;
+    if (data.purchases)  state.purchases  = data.purchases;
+    if (data.budget)     state.budget     = data.budget;
+    if (data.cycleStart) state.cycleStart = data.cycleStart;
+    if (data.cycleNum)   state.cycleNum   = data.cycleNum;
+    localStorage.setItem('fmp_state', JSON.stringify(state));
     dot.className = 'sync-dot ok';
-    refreshStoreSelects();
-    if (currentTab==='dashboard') renderDashboard();
-    if (currentTab==='shopping')  renderShopping();
-    if (currentTab==='stores')    renderStores();
+    if (!silent) {
+      refreshStoreSelects();
+      if (currentTab==='dashboard') renderDashboard();
+      if (currentTab==='shopping')  renderShopping();
+      if (currentTab==='stores')    renderStores();
+    }
   } catch(e) {
     dot.className = 'sync-dot err';
-    console.error(e);
+    console.error('Sync failed:', e);
   }
+}
+
+// ── Store Shopping Mode ───────────────────────────────────────────────────────
+function enterShopMode() {
+  const shopEl = document.getElementById('shop-mode');
+  shopEl.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  renderShopMode();
+}
+function exitShopMode() {
+  document.getElementById('shop-mode').style.display = 'none';
+  document.body.style.overflow = '';
+  renderShopping(); // refresh main list with any checks done in shop mode
+}
+function renderShopMode() {
+  const items = state.items.filter(i=>!isSkipped(i)&&cycleNeed(i)>0).sort((a,b)=>a.name.localeCompare(b.name));
+  const storeName = document.getElementById('store-filter').value
+    ? state.stores.find(s=>s.id===document.getElementById('store-filter').value)?.name || 'Store'
+    : 'All Stores';
+  document.getElementById('sm-store-name').textContent = storeName;
+  document.getElementById('sm-total-count').textContent = items.length;
+  document.getElementById('sm-list').innerHTML = items.map(item => {
+    const toBuy = cycleNeed(item);
+    const cost  = +(toBuy * itemUnitPrice(item)).toFixed(2);
+    return `<div id="sm-item-${item.id}" onclick="smToggle('${item.id}')"
+      style="display:flex;align-items:center;gap:14px;padding:14px 4px;border-bottom:1px solid var(--border);cursor:pointer;${item.checked?'opacity:.45':''}">
+      <div style="width:32px;height:32px;border-radius:8px;border:2px solid ${item.checked?'var(--green)':'var(--border)'};background:${item.checked?'var(--green)':'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px;color:#0f1117">
+        ${item.checked?'✓':''}
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:16px;font-weight:${item.checked?'400':'700'};text-decoration:${item.checked?'line-through':'none'};color:${item.checked?'var(--muted)':'var(--text)'}">${item.name}</div>
+        <div style="font-size:13px;color:var(--muted)">${toBuy} ${item.unit}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:16px;font-weight:700;color:${item.checked?'var(--muted)':'var(--green)'};font-variant-numeric:tabular-nums">${cost>0?'$'+cost.toFixed(2):'—'}</div>
+      </div>
+    </div>`;
+  }).join('');
+  updateShopModeTotals();
+}
+function smToggle(id) {
+  const item = state.items.find(i=>i.id===id);
+  if (!item) return;
+  item.checked = !item.checked;
+  save();
+  // Update just this row
+  const row = document.getElementById('sm-item-'+id);
+  if (row) {
+    const toBuy = cycleNeed(item);
+    const cost  = +(toBuy * itemUnitPrice(item)).toFixed(2);
+    row.style.opacity = item.checked ? '.45' : '1';
+    row.innerHTML = `
+      <div style="width:32px;height:32px;border-radius:8px;border:2px solid ${item.checked?'var(--green)':'var(--border)'};background:${item.checked?'var(--green)':'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px;color:#0f1117">
+        ${item.checked?'✓':''}
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:16px;font-weight:${item.checked?'400':'700'};text-decoration:${item.checked?'line-through':'none'};color:${item.checked?'var(--muted)':'var(--text)'}">${item.name}</div>
+        <div style="font-size:13px;color:var(--muted)">${toBuy} ${item.unit}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:16px;font-weight:700;color:${item.checked?'var(--muted)':'var(--green)'};font-variant-numeric:tabular-nums">${cost>0?'$'+cost.toFixed(2):'—'}</div>
+      </div>`;
+    row.onclick = () => smToggle(id);
+  }
+  updateShopModeTotals();
+}
+function updateShopModeTotals() {
+  const items = state.items.filter(i=>!isSkipped(i)&&cycleNeed(i)>0);
+  const spent     = items.filter(i=>i.checked).reduce((s,i)=>s+cycleNeed(i)*itemUnitPrice(i),0);
+  const remaining = items.filter(i=>!i.checked).reduce((s,i)=>s+cycleNeed(i)*itemUnitPrice(i),0);
+  const checkedCount = items.filter(i=>i.checked).length;
+  document.getElementById('sm-spent').textContent     = '$'+spent.toFixed(2);
+  document.getElementById('sm-remaining').textContent = '$'+remaining.toFixed(2);
+  document.getElementById('sm-checked-count').textContent = checkedCount;
 }
 
 // ── PWA install ───────────────────────────────────────────────────────────────
